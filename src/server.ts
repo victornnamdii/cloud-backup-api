@@ -22,7 +22,7 @@ app.use(session({
   cookie: {
     secure: process.env.NODE_ENV !== 'development',
     httpOnly: true,
-    maxAge: 1
+    maxAge: 1 * 24 * 60 * 60 * 1000 // One day
   }
 }))
 
