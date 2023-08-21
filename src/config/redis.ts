@@ -7,7 +7,7 @@ class RedisClient {
 
   constructor () {
     this.client = createClient()
-    this.clientConnected = true
+    this.clientConnected = false
     this.client.on('error', (err: Error) => {
       console.log(err.toString())
       this.clientConnected = false
@@ -17,7 +17,8 @@ class RedisClient {
     })
   }
 
-  isAlive (): boolean {
+  async connect (): Promise<boolean> {
+    await this.client.connect()
     return this.clientConnected
   }
 

@@ -18,7 +18,7 @@ const connect_redis_1 = __importDefault(require("connect-redis"));
 class RedisClient {
     constructor() {
         this.client = (0, redis_1.createClient)();
-        this.clientConnected = true;
+        this.clientConnected = false;
         this.client.on('error', (err) => {
             console.log(err.toString());
             this.clientConnected = false;
@@ -27,8 +27,11 @@ class RedisClient {
             this.clientConnected = true;
         });
     }
-    isAlive() {
-        return this.clientConnected;
+    connect() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.client.connect();
+            return this.clientConnected;
+        });
     }
     get(key) {
         return __awaiter(this, void 0, void 0, function* () {
