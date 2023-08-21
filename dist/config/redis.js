@@ -8,9 +8,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.redisClient = void 0;
+exports.sessionStore = exports.redisClient = void 0;
 const redis_1 = require("redis");
+const connect_redis_1 = __importDefault(require("connect-redis"));
 class RedisClient {
     constructor() {
         this.client = (0, redis_1.createClient)();
@@ -50,3 +54,8 @@ class RedisClient {
 }
 const redisClient = new RedisClient();
 exports.redisClient = redisClient;
+const sessionStore = new connect_redis_1.default({
+    client: redisClient.client,
+    prefix: 'risevest:'
+});
+exports.sessionStore = sessionStore;

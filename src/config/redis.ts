@@ -1,7 +1,8 @@
 import { createClient, type RedisClientType } from 'redis'
+import RedisStore from 'connect-redis'
 
 class RedisClient {
-  private readonly client: RedisClientType
+  client: RedisClientType
   private clientConnected: boolean
 
   constructor () {
@@ -39,4 +40,9 @@ class RedisClient {
 
 const redisClient: RedisClient = new RedisClient()
 
-export { redisClient }
+const sessionStore: RedisStore = new RedisStore({
+  client: redisClient.client,
+  prefix: 'risevest:'
+})
+
+export { redisClient, sessionStore }

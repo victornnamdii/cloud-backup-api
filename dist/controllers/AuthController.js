@@ -12,32 +12,33 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const newUser_1 = __importDefault(require("../utils/validators/newUser"));
+const bcrypt_1 = __importDefault(require("bcrypt"));
+const login_1 = __importDefault(require("../utils/validators/login"));
 const BodyError_1 = __importDefault(require("../utils/BodyError"));
 const db_1 = __importDefault(require("../config/db"));
-const hashPassword_1 = __importDefault(require("../utils/hashPassword"));
+const redis_1 = require("../config/redis");
 /* eslint-disable-next-line @typescript-eslint/no-extraneous-class */
-class UserController {
-    static create(req, res, next) {
+class AuthController {
+    static login(req, res, next) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                (0, newUser_1.default)(req.body);
+                (0, login_1.default)(req.body);
+                let auth = false;
                 const Users = (0, db_1.default)('users');
-                const { email, password, firstName, lastName } = req.body;
+                const { email, password } = req.body;
                 const user = yield Users.where({ email }).first();
                 if (user !== undefined) {
-                    return res.status(400).json({ error: 'Email already taken' });
+                    auth = yield bcrypt_1.default.compare(password, user.password);
+                    if (auth) {
+                        yield redis_1.redisClient.set(`auth_${user.id}`, JSON.stringify(user), 1 * 24 * 60 * 60 // One day
+                        );
+                        req.session.user = { id: user.id };
+                        return res.status(200).json({
+                            message: `Welcome ${user.first_name} ${user.last_name}`
+                        });
+                    }
                 }
-                yield Users.insert({
-                    email,
-                    password: yield (0, hashPassword_1.default)(password),
-                    first_name: firstName,
-                    last_name: lastName
-                });
-                return res.status(201).json({
-                    message: 'Sign up successful',
-                    email: req.body.email
-                });
+                return res.status(401).json({ error: 'Incorrect email/password' });
             }
             catch (error) {
                 console.log(error);
@@ -49,4 +50,4 @@ class UserController {
         });
     }
 }
-exports.default = UserController;
+exports.default = AuthController;
