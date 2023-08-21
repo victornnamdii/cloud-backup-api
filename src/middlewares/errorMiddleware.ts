@@ -1,12 +1,9 @@
-import {ErrorRequestHandler} from 'express'
+import { type ErrorRequestHandler } from 'express'
 
 const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
-  if (err) {
-    res.status(500).json({
-      status: 'FAILED',
-      error: 'Internal Server Error',
-    });
+  if (err !== undefined || err !== null) {
+    res.status(500).json({ error: 'Internal Server Error' })
   }
-};
+}
 
-export default errorHandler;
+export default errorHandler

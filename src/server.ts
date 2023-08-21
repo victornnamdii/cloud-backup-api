@@ -1,10 +1,9 @@
-import express, { type Request, type Response, type Express, NextFunction } from 'express'
-import cookieParser from 'cookie-parser'
-import session from 'express-session'
+import express, { type Request, type Response, type Express, type NextFunction } from 'express'
 import dotenv from 'dotenv'
 import startMigrations from './migrations/createUsersAndFiles'
 import { redisClient } from './config/redis'
 import errorHandler from './middlewares/errorMiddleware'
+import userRouter from './routes/userRoutes'
 
 dotenv.config()
 
@@ -39,13 +38,15 @@ startMigrations()
     process.exit(1)
   })
 
+app.use(userRouter)
+
 app.use((req: Request, res: Response, next: NextFunction) => {
   try {
     res.status(404).json({
-      error: "Page not found"
-    });
+      error: 'Page not found'
+    })
   } catch (error) {
-    next(error);
+    next(error)
   }
-});
+})
 app.use(errorHandler)

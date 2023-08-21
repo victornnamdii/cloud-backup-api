@@ -1,0 +1,35 @@
+import isEmail from 'validator/lib/isEmail'
+import RequestBodyError from '../BodyError'
+interface newUserParams {
+  email: string
+  password: string
+  firstName: string
+  lastName: string
+}
+
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
+const validateNewUserBody = (body: newUserParams): void => {
+  if (!body.email ||
+    !isEmail(body.email)
+  ) {
+    throw new RequestBodyError('Please enter a valid email')
+  }
+
+  if (!body.password || typeof body.password !== 'string') {
+    throw new RequestBodyError('Please enter a password')
+  }
+
+  if (body.password.length < 6) {
+    throw new RequestBodyError('Please enter a password of atleast six(6) characters')
+  }
+
+  if (!body.firstName || typeof body.firstName !== 'string') {
+    throw new RequestBodyError('Please enter your first name')
+  }
+
+  if (!body.lastName || typeof body.lastName !== 'string') {
+    throw new RequestBodyError('Please enter your last name')
+  }
+}
+
+export default validateNewUserBody

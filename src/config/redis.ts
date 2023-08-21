@@ -1,9 +1,8 @@
 import { createClient, type RedisClientType } from 'redis'
-import RedisStore from 'connect-redis'
 
 class RedisClient {
-  client: RedisClientType
-  clientConnected: boolean
+  private readonly client: RedisClientType
+  private clientConnected: boolean
 
   constructor () {
     this.client = createClient()

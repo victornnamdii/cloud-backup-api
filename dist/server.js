@@ -9,6 +9,7 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const createUsersAndFiles_1 = __importDefault(require("./migrations/createUsersAndFiles"));
 const redis_1 = require("./config/redis");
 const errorMiddleware_1 = __importDefault(require("./middlewares/errorMiddleware"));
+const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const port = (_a = process.env.PORT) !== null && _a !== void 0 ? _a : 6000;
@@ -36,10 +37,11 @@ app.get('/', (req, res) => {
     .catch(() => {
     process.exit(1);
 });
+app.use(userRoutes_1.default);
 app.use((req, res, next) => {
     try {
         res.status(404).json({
-            error: "Page not found"
+            error: 'Page not found'
         });
     }
     catch (error) {

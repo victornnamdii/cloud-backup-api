@@ -15,8 +15,7 @@ const config = {
         password: process.env.PG_PASSWORD,
         database: process.env.PG_DATABASE,
         port
-    },
-    pool: { min: 0, max: 7 }
+    }
 };
 const db = (0, knex_1.knex)(config);
 exports.default = db;

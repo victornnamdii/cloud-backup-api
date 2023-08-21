@@ -18,12 +18,11 @@ const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
         let exists = yield db_1.default.schema.hasTable('users');
         if (!exists) {
             yield db_1.default.schema.createTable('users', (table) => {
-                table.uuid('id').primary();
+                table.uuid('id').primary().defaultTo(db_1.default.fn.uuid());
                 table.string('email').notNullable().unique();
                 table.string('password').notNullable();
                 table.string('first_name').notNullable();
                 table.string('last_name').notNullable();
-                table.boolean('is_verified').defaultTo(false);
                 table.boolean('is_superuser').defaultTo(false);
                 table.timestamps(false, true);
             });
@@ -31,7 +30,7 @@ const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
         }
         exists = yield db_1.default.schema.hasTable('files');
         if (!exists) {
-            yield db_1.default.schema.createTableIfNotExists('files', (table) => {
+            yield db_1.default.schema.createTable('files', (table) => {
                 table.uuid('id').primary();
                 table.string('name', 100).notNullable();
                 table.string('folder', 100).nullable().defaultTo(null);
@@ -39,7 +38,7 @@ const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
             });
             console.log('Created Files Table');
         }
-        console.log('Migrations complete');
+        console.log('Connected to DB');
     }
     catch (error) {
         console.log('Error connecting to DB');
