@@ -62,7 +62,7 @@ const requireFolderAuth = async (req: Request, res: Response, next: NextFunction
         user_id: req.user.id
       }).first()
       if (destinationFolder === undefined) {
-        return res.status(400).json({ error: `You do not have a folder named ${folderName}` })
+        return res.status(404).json({ error: `You do not have a folder named ${folderName}` })
       }
       destinationFolderId = destinationFolder.id
     }
@@ -74,7 +74,7 @@ const requireFolderAuth = async (req: Request, res: Response, next: NextFunction
         user_id: req.user.id
       }).first()
       if (sourceFolder === undefined) {
-        return res.status(400).json({ error: `You do not have a folder named ${source}` })
+        return res.status(404).json({ error: `You do not have a folder named ${source}` })
       }
     }
 
@@ -91,7 +91,7 @@ const requireFolderAuth = async (req: Request, res: Response, next: NextFunction
       } else {
         message += ' in root directory'
       }
-      return res.status(400).json({ error: message })
+      return res.status(404).json({ error: message })
     }
     if (file.folder_id === destinationFolderId) {
       let message: string = `${fileName} already exists in`
