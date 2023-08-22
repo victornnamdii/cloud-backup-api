@@ -54,7 +54,7 @@ const multerAgent = (0, multer_1.default)({
         fileSize: 200 * 1024 * 1024 // 200 MB
     }
 });
-const upload = multerAgent.single('image');
+const upload = multerAgent.single('file');
 const uploadToS3 = (req, res, next) => {
     try {
         upload(req, res, (err) => {

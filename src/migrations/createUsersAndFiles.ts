@@ -20,7 +20,9 @@ const createTables = async (): Promise<void> => {
       await db.schema.createTable('folders', (table) => {
         table.uuid('id').primary().defaultTo(db.fn.uuid())
         table.string('name', 100).notNullable()
+        table.string('displayName', 100).notNullable()
         table.uuid('user_id').notNullable().references('id').inTable('users')
+        table.timestamps(false, true)
       })
       await db.schema.alterTable('folders', (table) => {
         table.unique(['user_id', 'name'], {
@@ -35,10 +37,12 @@ const createTables = async (): Promise<void> => {
       await db.schema.createTable('files', (table) => {
         table.uuid('id').primary().defaultTo(db.fn.uuid())
         table.string('name', 100).notNullable()
+        table.string('displayName', 100).notNullable()
         table.uuid('folder_id').references('id').inTable('folders').nullable()
         table.string('link').notNullable()
         table.string('s3_key').notNullable()
         table.uuid('user_id').notNullable().references('id').inTable('users')
+        table.timestamps(false, true)
       })
       await db.schema.alterTable('files', (table) => {
         table.unique(['user_id', 'name', 'folder_id'], {

@@ -8,6 +8,7 @@ import errorHandler from './middlewares/errorMiddleware'
 import userRouter from './routes/userRoutes'
 import authRouter from './routes/authRoutes'
 import deserializeUser from './middlewares/sessionMiddleware'
+import fileRouter from './routes/fileRoutes'
 
 dotenv.config()
 
@@ -60,6 +61,7 @@ startMigrations()
 app.use(deserializeUser)
 app.use(userRouter)
 app.use(authRouter)
+app.use(fileRouter)
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   try {

@@ -46,7 +46,7 @@ const multerAgent = multer({
   }
 })
 
-const upload = multerAgent.single('image')
+const upload = multerAgent.single('file')
 
 const uploadToS3 = (req: Request, res: Response, next: NextFunction): void => {
   try {

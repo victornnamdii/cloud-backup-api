@@ -1,13 +1,14 @@
 import { Router } from 'express'
-import { requireAuth, requireFolderAuth } from '../middlewares/authMiddleware'
+import { requireAuth, requireFolderAuth, requireFolderQueryAuth } from '../middlewares/authMiddleware'
 import { uploadToS3 } from '../middlewares/uploadMiddleware'
 import FileController from '../controllers/fileController'
 
 const fileRouter: Router = Router()
 
 /* eslint-disable @typescript-eslint/no-misused-promises */
-fileRouter.post('/files', requireAuth, uploadToS3, FileController.addFile)
-fileRouter.post('/folders', requireAuth)
-fileRouter.put('/folders/:name', requireFolderAuth, uploadToS3)
+fileRouter.get('/files', requireAuth, FileController.getAllFiles)
+fileRouter.post('/files', requireFolderQueryAuth, uploadToS3, FileController.addFile)
+fileRouter.post('/folders', requireAuth, FileController.addFolder)
+fileRouter.put('/folders/:folderName', requireFolderAuth, FileController.moveFile)
 
 export default fileRouter

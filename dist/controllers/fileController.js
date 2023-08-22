@@ -27,11 +27,19 @@ class FileController {
                 if (!req.file.location) {
                     return res.status(400).json({ error: 'Please add an image' });
                 }
-                //   const folderId: (string | undefined) = req.query.folder_id as (string | undefined)
                 const Files = (0, db_1.default)('files');
+                const file = yield Files.where({
+                    name: req.file.originalname.toLowerCase(),
+                    folder_id: res.locals.folderId,
+                    user_id: (_a = req.user) === null || _a === void 0 ? void 0 : _a.id
+                });
+                if (file !== undefined) {
+                    return res.status(400).json({ error: `${req.file.originalname} already exists` });
+                }
                 yield Files.insert({
-                    name: (_a = req.file) === null || _a === void 0 ? void 0 : _a.originalname,
-                    // folder_id: folderId,
+                    displayName: req.file.originalname,
+                    name: req.file.originalname.toLowerCase(),
+                    folder_id: res.locals.folderId,
                     link: req.file.location,
                     s3_key: req.file.key,
                     user_id: (_b = req.user) === null || _b === void 0 ? void 0 : _b.id
@@ -53,8 +61,81 @@ class FileController {
                 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
                 // @ts-expect-error: Unreachable code error
                 if ((_c = error === null || error === void 0 ? void 0 : error.message) === null || _c === void 0 ? void 0 : _c.includes('unique')) {
-                    return res.status(400).json({ error: 'File already exists' });
+                    return res.status(400).json({ error: `${req.file.originalname} already exists` });
                 }
+                next(error);
+            }
+        });
+    }
+    static addFolder(req, res, next) {
+        var _a, _b, _c;
+        return __awaiter(this, void 0, void 0, function* () {
+            const { name } = req.body;
+            try {
+                (0, newFile_1.default)(req.body);
+                const Folders = (0, db_1.default)('folders');
+                const folder = yield Folders.where({
+                    name: name.toLowerCase(),
+                    user_id: (_a = req.user) === null || _a === void 0 ? void 0 : _a.id
+                }).first();
+                if (folder !== undefined) {
+                    return res.status(400).json({ error: `${name} folder already exists` });
+                }
+                yield Folders.insert({
+                    name: name.toLowerCase(),
+                    displayName: name,
+                    user_id: (_b = req.user) === null || _b === void 0 ? void 0 : _b.id
+                });
+                res.status(201).json({ message: `${name} folder succesfully created` });
+            }
+            catch (error) {
+                console.log(error);
+                if (error instanceof BodyError_1.default) {
+                    return res.status(400).json({ error: error.message });
+                }
+                /* eslint-disable @typescript-eslint/strict-boolean-expressions */
+                // @ts-expect-error: Unreachable code error
+                if ((_c = error === null || error === void 0 ? void 0 : error.message) === null || _c === void 0 ? void 0 : _c.includes('unique')) {
+                    return res.status(400).json({ error: `${name} folder already exists` });
+                }
+                next(error);
+            }
+        });
+    }
+    static moveFile(req, res, next) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            const { fileName } = req.body;
+            const { folderName } = req.params;
+            try {
+                const { folderId, fileId } = res.locals;
+                const Files = (0, db_1.default)('files');
+                yield Files.where({
+                    id: fileId
+                }).update({
+                    folder_id: folderId
+                });
+                return res.status(201).json({ message: `${fileName} moved to ${folderName}` });
+            }
+            catch (error) {
+                /* eslint-disable @typescript-eslint/strict-boolean-expressions */
+                // @ts-expect-error: Unreachable code error
+                if ((_a = error === null || error === void 0 ? void 0 : error.message) === null || _a === void 0 ? void 0 : _a.includes('unique')) {
+                    return res.status(400).json({ error: `${fileName} already exists in ${folderName} folder` });
+                }
+                next(error);
+            }
+        });
+    }
+    static getAllFiles(req, res, next) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const files = yield db_1.default.where("files.user_id", (_a = req.user) === null || _a === void 0 ? void 0 : _a.id).select('files.displayName', 'link', 'folders.name').from('files')
+                    .leftJoin('folders', 'files.folder_id', 'folders.id');
+                return res.status(200).json({ files });
+            }
+            catch (error) {
                 next(error);
             }
         });
