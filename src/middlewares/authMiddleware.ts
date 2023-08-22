@@ -82,21 +82,21 @@ const requireFolderAuth = async (req: Request, res: Response, next: NextFunction
     const file = await Files.where({
       name: fileName.toLowerCase(),
       user_id: req.user.id,
-      folder_id: sourceFolder ? sourceFolder.id : null
+      folder_id: sourceFolder?.id ?? null
     }).first('folder_id', 'id')
     if (file === undefined) {
       let message: string = `You do not have a file named ${fileName}`
       if (sourceFolder !== undefined) {
         message += ` in ${source} folder`
       } else {
-        message += ` in root directory`
+        message += ' in root directory'
       }
       return res.status(400).json({ error: message })
     }
     if (file.folder_id === destinationFolderId) {
       let message: string = `${fileName} already exists in`
       if (destinationFolderId === null) {
-        message += ` root directory`
+        message += ' root directory'
       } else {
         message += ` ${folderName} folder`
       }

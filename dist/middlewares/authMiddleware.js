@@ -41,6 +41,7 @@ const requireAuth = (req, res, next) => {
 };
 exports.requireAuth = requireAuth;
 const requireFolderAuth = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         if (req.user === undefined) {
             return res.status(401).json({ error: 'Unauthorized' });
@@ -77,7 +78,7 @@ const requireFolderAuth = (req, res, next) => __awaiter(void 0, void 0, void 0, 
         const file = yield Files.where({
             name: fileName.toLowerCase(),
             user_id: req.user.id,
-            folder_id: sourceFolder ? sourceFolder.id : null
+            folder_id: (_a = sourceFolder === null || sourceFolder === void 0 ? void 0 : sourceFolder.id) !== null && _a !== void 0 ? _a : null
         }).first('folder_id', 'id');
         if (file === undefined) {
             let message = `You do not have a file named ${fileName}`;
@@ -85,14 +86,14 @@ const requireFolderAuth = (req, res, next) => __awaiter(void 0, void 0, void 0, 
                 message += ` in ${source} folder`;
             }
             else {
-                message += ` in root directory`;
+                message += ' in root directory';
             }
             return res.status(400).json({ error: message });
         }
         if (file.folder_id === destinationFolderId) {
             let message = `${fileName} already exists in`;
             if (destinationFolderId === null) {
-                message += ` root directory`;
+                message += ' root directory';
             }
             else {
                 message += ` ${folderName} folder`;

@@ -27,10 +27,11 @@ class FileController {
                 if (!req.file.location) {
                     return res.status(400).json({ error: 'Please add an image' });
                 }
+                const folderId = res.locals.folderId;
                 const Files = (0, db_1.default)('files');
                 const file = yield Files.where({
                     name: req.body.name.toLowerCase(),
-                    folder_id: res.locals.folderId || null,
+                    folder_id: folderId,
                     user_id: (_a = req.user) === null || _a === void 0 ? void 0 : _a.id
                 }).first();
                 if (file !== undefined) {
@@ -49,7 +50,7 @@ class FileController {
                 });
                 return res.status(201).json({
                     message: 'File succesfully uploaded',
-                    link: req.file.location,
+                    link: req.file.location
                 });
             }
             catch (error) {
@@ -95,7 +96,6 @@ class FileController {
                 if (error instanceof BodyError_1.default) {
                     return res.status(400).json({ error: error.message });
                 }
-                /* eslint-disable @typescript-eslint/strict-boolean-expressions */
                 // @ts-expect-error: Unreachable code error
                 if ((_c = error === null || error === void 0 ? void 0 : error.message) === null || _c === void 0 ? void 0 : _c.includes('unique')) {
                     return res.status(400).json({ error: `${name} folder already exists` });
@@ -122,12 +122,11 @@ class FileController {
                     message += ` ${folderName}`;
                 }
                 else {
-                    message += ` root directory`;
+                    message += ' root directory';
                 }
                 return res.status(201).json({ message });
             }
             catch (error) {
-                /* eslint-disable @typescript-eslint/strict-boolean-expressions */
                 // @ts-expect-error: Unreachable code error
                 if ((_a = error === null || error === void 0 ? void 0 : error.message) === null || _a === void 0 ? void 0 : _a.includes('unique')) {
                     return res.status(400).json({ error: `${fileName} already exists in ${folderName} folder` });

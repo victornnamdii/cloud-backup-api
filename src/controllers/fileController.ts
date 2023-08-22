@@ -8,7 +8,7 @@ interface File {
   id: string
   name: string
   displayName: string
-  folder_id: string
+  folder_id: string | null
   link: string
   s3_key: string
   user_id: string
@@ -33,10 +33,11 @@ class FileController {
         return res.status(400).json({ error: 'Please add an image' })
       }
 
+      const folderId: string | null = res.locals.folderId
       const Files = db<File>('files')
       const file = await Files.where({
         name: req.body.name.toLowerCase(),
-        folder_id: res.locals.folderId || null,
+        folder_id: folderId,
         user_id: req.user?.id
       }).first()
       if (file !== undefined) {
@@ -56,7 +57,7 @@ class FileController {
       })
       return res.status(201).json({
         message: 'File succesfully uploaded',
-        link: req.file.location,
+        link: req.file.location
       })
     } catch (error) {
       if (req.file !== undefined) {
@@ -99,7 +100,6 @@ class FileController {
       if (error instanceof RequestBodyError) {
         return res.status(400).json({ error: error.message })
       }
-      /* eslint-disable @typescript-eslint/strict-boolean-expressions */
       // @ts-expect-error: Unreachable code error
       if (error?.message?.includes('unique')) {
         return res.status(400).json({ error: `${name} folder already exists` })
@@ -124,11 +124,10 @@ class FileController {
       if (folderName !== 'null') {
         message += ` ${folderName}`
       } else {
-        message += ` root directory`
+        message += ' root directory'
       }
       return res.status(201).json({ message })
     } catch (error) {
-      /* eslint-disable @typescript-eslint/strict-boolean-expressions */
       // @ts-expect-error: Unreachable code error
       if (error?.message?.includes('unique')) {
         return res.status(400).json({ error: `${fileName} already exists in ${folderName} folder` })
