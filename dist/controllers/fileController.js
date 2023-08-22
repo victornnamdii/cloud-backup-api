@@ -12,6 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const isUUID_1 = __importDefault(require("validator/lib/isUUID"));
 const db_1 = __importDefault(require("../config/db"));
 const BodyError_1 = __importDefault(require("../utils/BodyError"));
 const newFile_1 = __importDefault(require("../utils/validators/newFile"));
@@ -140,7 +141,7 @@ class FileController {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const files = yield db_1.default.where('files.user_id', (_a = req.user) === null || _a === void 0 ? void 0 : _a.id).select('files.displayName as file_name', 'link as download_link', 'folders.name as folder_name').from('files')
+                const files = yield db_1.default.where('files.user_id', (_a = req.user) === null || _a === void 0 ? void 0 : _a.id).select('files.id as file_id', 'files.displayName as file_name', 'link as download_link', 'folders.displayName as folder_name').from('files')
                     .leftJoin('folders', 'files.folder_id', 'folders.id');
                 return res.status(200).json({ files });
             }
@@ -160,6 +161,29 @@ class FileController {
                     folder.file_count = Number(folder.file_count);
                 });
                 return res.status(200).json({ folders });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
+    static download(req, res, next) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const fileId = req.params.fileId;
+                if (!(0, isUUID_1.default)(fileId, 4)) {
+                    return res.status(400).json({ error: 'Invalid file id' });
+                }
+                const Files = (0, db_1.default)('files');
+                const file = yield Files.where({
+                    user_id: (_a = req.user) === null || _a === void 0 ? void 0 : _a.id,
+                    id: fileId
+                }).first('link');
+                if (file === undefined) {
+                    return res.status(404).json({ error: 'File not found. Please check file id in the URL.' });
+                }
+                res.redirect(file.link);
             }
             catch (error) {
                 next(error);

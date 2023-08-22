@@ -1,4 +1,5 @@
 import { type Request, type Response, type NextFunction } from 'express'
+import isUUID from 'validator/lib/isUUID'
 import db from '../config/db'
 import RequestBodyError from '../utils/BodyError'
 import validateNewFileBody from '../utils/validators/newFile'
@@ -143,9 +144,10 @@ class FileController {
       const files = await db.where(
         'files.user_id', req.user?.id
       ).select(
+        'files.id as file_id',
         'files.displayName as file_name',
         'link as download_link',
-        'folders.name as folder_name'
+        'folders.displayName as folder_name'
       ).from('files')
         .leftJoin('folders', 'files.folder_id', 'folders.id')
       return res.status(200).json({ files })
@@ -170,6 +172,26 @@ class FileController {
         folder.file_count = Number(folder.file_count)
       })
       return res.status(200).json({ folders })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  static async download (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> {
+    try {
+      const fileId: string = req.params.fileId
+      if (!isUUID(fileId, 4)) {
+        return res.status(400).json({ error: 'Invalid file id' })
+      }
+      const Files = db<File>('files')
+      const file = await Files.where({
+        user_id: req.user?.id,
+        id: fileId
+      }).first('link')
+      if (file === undefined) {
+        return res.status(404).json({ error: 'File not found. Please check file id in the URL.' })
+      }
+      res.redirect(file.link)
     } catch (error) {
       next(error)
     }
