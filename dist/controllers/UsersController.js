@@ -24,12 +24,12 @@ class UserController {
                 (0, newUser_1.default)(req.body);
                 const Users = (0, db_1.default)('users');
                 const { email, password, firstName, lastName } = req.body;
-                const user = yield Users.where({ email }).first();
+                const user = yield Users.where({ email: email.toLowerCase() }).first();
                 if (user !== undefined) {
                     return res.status(400).json({ error: 'Email already taken' });
                 }
                 yield Users.insert({
-                    email,
+                    email: email.toLowerCase(),
                     password: yield (0, hashPassword_1.default)(password),
                     first_name: firstName,
                     last_name: lastName

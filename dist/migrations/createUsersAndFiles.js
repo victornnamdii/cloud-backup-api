@@ -28,13 +28,36 @@ const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
             });
             console.log('Created Users Table');
         }
+        exists = yield db_1.default.schema.hasTable('folders');
+        if (!exists) {
+            yield db_1.default.schema.createTable('folders', (table) => {
+                table.uuid('id').primary().defaultTo(db_1.default.fn.uuid());
+                table.string('name', 100).notNullable();
+                table.uuid('user_id').notNullable().references('id').inTable('users');
+            });
+            yield db_1.default.schema.alterTable('folders', (table) => {
+                table.unique(['user_id', 'name'], {
+                    indexName: 'user_folders',
+                    useConstraint: true
+                });
+            });
+            console.log('Created Folders Table');
+        }
         exists = yield db_1.default.schema.hasTable('files');
         if (!exists) {
             yield db_1.default.schema.createTable('files', (table) => {
-                table.uuid('id').primary();
+                table.uuid('id').primary().defaultTo(db_1.default.fn.uuid());
                 table.string('name', 100).notNullable();
-                table.string('folder', 100).nullable().defaultTo(null);
-                table.uuid('user_id').references('id').inTable('users');
+                table.uuid('folder_id').references('id').inTable('folders').nullable();
+                table.string('link').notNullable();
+                table.string('s3_key').notNullable();
+                table.uuid('user_id').notNullable().references('id').inTable('users');
+            });
+            yield db_1.default.schema.alterTable('files', (table) => {
+                table.unique(['user_id', 'name', 'folder_id'], {
+                    indexName: 'user_files',
+                    useConstraint: true
+                });
             });
             console.log('Created Files Table');
         }

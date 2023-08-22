@@ -27,13 +27,13 @@ class UserController {
         lastName
       } = req.body
 
-      const user = await Users.where({ email }).first()
+      const user = await Users.where({ email: email.toLowerCase() }).first()
       if (user !== undefined) {
         return res.status(400).json({ error: 'Email already taken' })
       }
 
       await Users.insert({
-        email,
+        email: email.toLowerCase(),
         password: await hashPassword(password),
         first_name: firstName,
         last_name: lastName

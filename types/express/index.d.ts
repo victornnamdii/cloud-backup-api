@@ -11,5 +11,6 @@ interface User {
 declare module 'express-serve-static-core' {
   interface Request {
     user: User | undefined
+    file: Express.MulterS3.File
   }
 }

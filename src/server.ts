@@ -56,6 +56,7 @@ startMigrations()
     process.exit(1)
   })
 
+/* eslint-disable @typescript-eslint/no-misused-promises */
 app.use(deserializeUser)
 app.use(userRouter)
 app.use(authRouter)

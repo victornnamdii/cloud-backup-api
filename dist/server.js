@@ -55,6 +55,7 @@ app.get('/', (req, res) => {
     .catch(() => {
     process.exit(1);
 });
+/* eslint-disable @typescript-eslint/no-misused-promises */
 app.use(sessionMiddleware_1.default);
 app.use(userRoutes_1.default);
 app.use(authRoutes_1.default);
