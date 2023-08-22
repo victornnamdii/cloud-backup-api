@@ -4,6 +4,7 @@ import db from '../config/db'
 import RequestBodyError from '../utils/BodyError'
 import validateNewFileBody from '../utils/validators/newFile'
 import { deleteObject } from '../middlewares/uploadMiddleware'
+import validateFileReviewBody from '../utils/validators/fileReview'
 
 interface File {
   id: string
@@ -141,15 +142,27 @@ class FileController {
 
   static async getAllFiles (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> {
     try {
-      const files = await db.where(
-        'files.user_id', req.user?.id
-      ).select(
-        'files.id as file_id',
-        'files.displayName as file_name',
-        'link as download_link',
-        'folders.displayName as folder_name'
-      ).from('files')
-        .leftJoin('folders', 'files.folder_id', 'folders.id')
+      let files: File[]
+      if (req.user?.is_superuser) {
+        files = await db.where(
+          'files.user_id', req.user?.id
+        ).select(
+          'files.id as file_id',
+          'files.displayName as file_name',
+          'link as download_link',
+          'folders.displayName as folder_name'
+        ).from('files')
+          .leftJoin('folders', 'files.folder_id', 'folders.id')
+      } else {
+        files = await db
+          .select(
+            'files.id as file_id',
+            'files.displayName as file_name',
+            'link as download_link',
+            'folders.displayName as folder_name'
+          ).from('files')
+          .leftJoin('folders', 'files.folder_id', 'folders.id')
+      }
       return res.status(200).json({ files })
     } catch (error) {
       next(error)
@@ -193,6 +206,38 @@ class FileController {
       }
       res.redirect(file.link)
     } catch (error) {
+      next(error)
+    }
+  }
+
+  static async review (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> {
+    try {
+      validateFileReviewBody(req.body)
+      const fileId: string = req.params.fileId
+      if (!isUUID(fileId, 4)) {
+        return res.status(400).json({ error: 'Invalid file id' })
+      }
+
+      const Files = db<File>('files')
+      const file = await Files.where({
+        id: fileId
+      }).first('s3_key', 'displayName')
+      if (file === undefined) {
+        return res.status(404).json({ error: 'File not found. Please check file id in the URL.' })
+      }
+
+      const safe = req.body.safe as boolean
+      if (!safe) {
+        await deleteObject({ key: file.s3_key })
+        await db<File>('files').where({
+          id: fileId
+        }).del()
+      }
+      res.status(201).json({ message: `${file.displayName} marked as unsafe and automatically deleted` })
+    } catch (error) {
+      if (error instanceof RequestBodyError) {
+        return res.status(400).json({ error: error.message })
+      }
       next(error)
     }
   }

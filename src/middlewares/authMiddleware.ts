@@ -43,6 +43,18 @@ const requireAuth = (req: Request, res: Response, next: NextFunction): FinalResp
   }
 }
 
+const requireAdminAuth = (req: Request, res: Response, next: NextFunction): FinalResponse => {
+  try {
+    if (req.user?.is_superuser === true) {
+      next()
+      return
+    }
+    return res.status(401).json({ error: 'Unauthorized' })
+  } catch (error) {
+    next(error)
+  }
+}
+
 const requireFolderAuth = async (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> => {
   try {
     if (req.user === undefined) {
@@ -150,6 +162,7 @@ const requireFolderQueryAuth = async (req: Request, res: Response, next: NextFun
 export {
   requireNoAuth,
   requireAuth,
+  requireAdminAuth,
   requireFolderAuth,
   requireFolderQueryAuth
 }

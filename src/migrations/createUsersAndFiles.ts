@@ -66,6 +66,7 @@ const createTables = async (): Promise<void> => {
           .inTable('users')
           .onUpdate('CASCADE')
           .onDelete('CASCADE')
+        table.boolean('safe').defaultTo(true)
         table.timestamps(false, true)
       })
       await db.schema.alterTable('files', (table) => {

@@ -5,13 +5,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const isEmail_1 = __importDefault(require("validator/lib/isEmail"));
 const BodyError_1 = __importDefault(require("../BodyError"));
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 const validatelogInBody = (body) => {
-    if (!body.email ||
-        !(0, isEmail_1.default)(body.email)) {
+    if (body.email === undefined) {
         throw new BodyError_1.default('Please enter your email');
     }
-    if (!body.password || typeof body.password !== 'string') {
+    if (!(0, isEmail_1.default)(body.email)) {
+        throw new BodyError_1.default('Please enter a valid email');
+    }
+    if (body.password === undefined || typeof body.password !== 'string') {
         throw new BodyError_1.default('Please enter your password');
     }
 };

@@ -17,7 +17,7 @@ const s3client: S3Client = new S3Client({
   region
 })
 
-const deleteObject = async (file: Express.MulterS3.File): Promise<void> => {
+const deleteObject = async (file: { key: string }): Promise<void> => {
   const deleteCommand = new DeleteObjectCommand({
     Bucket: s3Bucket,
     Key: file.key

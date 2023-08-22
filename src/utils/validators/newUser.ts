@@ -1,21 +1,22 @@
 import isEmail from 'validator/lib/isEmail'
 import RequestBodyError from '../BodyError'
 interface newUserParams {
-  email: string
-  password: string
-  firstName: string
-  lastName: string
+  email: string | undefined
+  password: string | undefined
+  firstName: string | undefined
+  lastName: string | undefined
 }
 
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 const validateNewUserBody = (body: newUserParams): void => {
-  if (!body.email ||
-    !isEmail(body.email)
-  ) {
+  if (body.email === undefined) {
+    throw new RequestBodyError('Please enter your email')
+  }
+
+  if (!isEmail(body.email)) {
     throw new RequestBodyError('Please enter a valid email')
   }
 
-  if (!body.password || typeof body.password !== 'string') {
+  if (body.password === undefined || typeof body.password !== 'string') {
     throw new RequestBodyError('Please enter a password')
   }
 
@@ -23,11 +24,11 @@ const validateNewUserBody = (body: newUserParams): void => {
     throw new RequestBodyError('Please enter a password of atleast six(6) characters')
   }
 
-  if (!body.firstName || typeof body.firstName !== 'string') {
+  if (body.firstName === undefined || typeof body.firstName !== 'string') {
     throw new RequestBodyError('Please enter your first name')
   }
 
-  if (!body.lastName || typeof body.lastName !== 'string') {
+  if (body.lastName === undefined || typeof body.lastName !== 'string') {
     throw new RequestBodyError('Please enter your last name')
   }
 }
