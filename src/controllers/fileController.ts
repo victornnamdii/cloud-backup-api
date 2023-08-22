@@ -5,6 +5,7 @@ import RequestBodyError from '../utils/BodyError'
 import validateNewFileBody from '../utils/validators/newFile'
 import { deleteObject } from '../middlewares/uploadMiddleware'
 import validateFileReviewBody from '../utils/validators/fileReview'
+import validateNewFolderBody from '../utils/validators/newFolder'
 
 interface File {
   id: string
@@ -37,9 +38,13 @@ class FileController {
       }
 
       const folderId: string | null = res.locals.folderId
+      /* eslint-disable-next-line @typescript-eslint/strict-boolean-expressions */
+      const name = req.body.name?.toLowerCase() || req.file.originalname.toLowerCase()
+      /* eslint-disable-next-line @typescript-eslint/strict-boolean-expressions */
+      const displayName = req.body.name || req.file.originalname
       const Files = db<File>('files')
       const file = await Files.where({
-        name: req.body.name.toLowerCase(),
+        name,
         folder_id: folderId ?? null,
         user_id: req.user?.id
       }).first()
@@ -51,8 +56,8 @@ class FileController {
       }
 
       await Files.insert({
-        displayName: req.body.name,
-        name: req.body.name.toLowerCase(),
+        displayName,
+        name,
         folder_id: res.locals.folderId,
         link: req.file.location,
         s3_key: req.file.key,
@@ -64,7 +69,11 @@ class FileController {
       })
     } catch (error) {
       if (req.file !== undefined) {
-        await deleteObject(req.file)
+        deleteObject(req.file)
+          .then()
+          .catch(() => {
+            console.log('Bad Request')
+          })
       }
       console.log(error)
       if (error instanceof RequestBodyError) {
@@ -82,7 +91,7 @@ class FileController {
   static async addFolder (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> {
     const { name } = req.body
     try {
-      validateNewFileBody(req.body)
+      validateNewFolderBody(req.body)
 
       const Folders = db<Folder>('folders')
       const folder = await Folders.where({
@@ -228,10 +237,10 @@ class FileController {
 
       const safe = req.body.safe as boolean
       if (!safe) {
-        await deleteObject({ key: file.s3_key })
         await db<File>('files').where({
           id: fileId
         }).del()
+        await deleteObject({ key: file.s3_key })
       }
       res.status(201).json({ message: `${file.displayName} marked as unsafe and automatically deleted` })
     } catch (error) {

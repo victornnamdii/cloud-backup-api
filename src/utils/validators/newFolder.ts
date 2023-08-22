@@ -1,6 +1,6 @@
 import RequestBodyError from '../BodyError'
 
-interface File {
+interface Folder {
   id: string
   name: string | undefined
   folder_id: string
@@ -9,13 +9,13 @@ interface File {
   user_id: string
 }
 
-const validateNewFileBody = (body: File): void => {
-  if (body.name !== undefined || typeof body.name !== 'string') {
-    throw new RequestBodyError('Please enter a file name')
+const validateNewFolderBody = (body: Folder): void => {
+  if (body.name === undefined || typeof body.name !== 'string') {
+    throw new RequestBodyError('Please enter a Folder name')
   }
   if (body.name === 'null') {
     throw new RequestBodyError('Name cannot be "null"')
   }
 }
 
-export default validateNewFileBody
+export default validateNewFolderBody

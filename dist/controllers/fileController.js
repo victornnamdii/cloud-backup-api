@@ -18,10 +18,11 @@ const BodyError_1 = __importDefault(require("../utils/BodyError"));
 const newFile_1 = __importDefault(require("../utils/validators/newFile"));
 const uploadMiddleware_1 = require("../middlewares/uploadMiddleware");
 const fileReview_1 = __importDefault(require("../utils/validators/fileReview"));
+const newFolder_1 = __importDefault(require("../utils/validators/newFolder"));
 /* eslint-disable-next-line @typescript-eslint/no-extraneous-class */
 class FileController {
     static addFile(req, res, next) {
-        var _a, _b, _c;
+        var _a, _b, _c, _d;
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 (0, newFile_1.default)(req.body);
@@ -30,11 +31,15 @@ class FileController {
                     return res.status(400).json({ error: 'Please add an image' });
                 }
                 const folderId = res.locals.folderId;
+                /* eslint-disable-next-line @typescript-eslint/strict-boolean-expressions */
+                const name = ((_a = req.body.name) === null || _a === void 0 ? void 0 : _a.toLowerCase()) || req.file.originalname.toLowerCase();
+                /* eslint-disable-next-line @typescript-eslint/strict-boolean-expressions */
+                const displayName = req.body.name || req.file.originalname;
                 const Files = (0, db_1.default)('files');
                 const file = yield Files.where({
-                    name: req.body.name.toLowerCase(),
+                    name,
                     folder_id: folderId !== null && folderId !== void 0 ? folderId : null,
-                    user_id: (_a = req.user) === null || _a === void 0 ? void 0 : _a.id
+                    user_id: (_b = req.user) === null || _b === void 0 ? void 0 : _b.id
                 }).first();
                 if (file !== undefined) {
                     if (req.file !== undefined) {
@@ -43,12 +48,12 @@ class FileController {
                     return res.status(400).json({ error: `${req.body.name} already exists` });
                 }
                 yield Files.insert({
-                    displayName: req.body.name,
-                    name: req.body.name.toLowerCase(),
+                    displayName,
+                    name,
                     folder_id: res.locals.folderId,
                     link: req.file.location,
                     s3_key: req.file.key,
-                    user_id: (_b = req.user) === null || _b === void 0 ? void 0 : _b.id
+                    user_id: (_c = req.user) === null || _c === void 0 ? void 0 : _c.id
                 });
                 return res.status(201).json({
                     message: 'File succesfully uploaded',
@@ -57,7 +62,11 @@ class FileController {
             }
             catch (error) {
                 if (req.file !== undefined) {
-                    yield (0, uploadMiddleware_1.deleteObject)(req.file);
+                    (0, uploadMiddleware_1.deleteObject)(req.file)
+                        .then()
+                        .catch(() => {
+                        console.log('Bad Request');
+                    });
                 }
                 console.log(error);
                 if (error instanceof BodyError_1.default) {
@@ -65,7 +74,7 @@ class FileController {
                 }
                 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
                 // @ts-expect-error: Unreachable code error
-                if ((_c = error === null || error === void 0 ? void 0 : error.message) === null || _c === void 0 ? void 0 : _c.includes('unique')) {
+                if ((_d = error === null || error === void 0 ? void 0 : error.message) === null || _d === void 0 ? void 0 : _d.includes('unique')) {
                     return res.status(400).json({ error: `${req.body.name} already exists` });
                 }
                 next(error);
@@ -77,7 +86,7 @@ class FileController {
         return __awaiter(this, void 0, void 0, function* () {
             const { name } = req.body;
             try {
-                (0, newFile_1.default)(req.body);
+                (0, newFolder_1.default)(req.body);
                 const Folders = (0, db_1.default)('folders');
                 const folder = yield Folders.where({
                     name: name.toLowerCase(),
@@ -216,10 +225,10 @@ class FileController {
                 }
                 const safe = req.body.safe;
                 if (!safe) {
-                    yield (0, uploadMiddleware_1.deleteObject)({ key: file.s3_key });
                     yield (0, db_1.default)('files').where({
                         id: fileId
                     }).del();
+                    yield (0, uploadMiddleware_1.deleteObject)({ key: file.s3_key });
                 }
                 res.status(201).json({ message: `${file.displayName} marked as unsafe and automatically deleted` });
             }
