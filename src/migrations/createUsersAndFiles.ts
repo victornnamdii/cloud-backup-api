@@ -1,3 +1,4 @@
+import hashPassword from '../utils/hashPassword'
 import db from '../config/db'
 
 const createTables = async (): Promise<void> => {
@@ -14,6 +15,14 @@ const createTables = async (): Promise<void> => {
         table.timestamps(false, true)
       })
       console.log('Created Users Table')
+      await db('users').insert({
+        email: process.env.ADMIN_EMAIL,
+        password: hashPassword(process.env.ADMIN_PASSWORD as string),
+        first_name: process.env.ADMIN_FIRST_NAME,
+        last_name: process.env.ADMIN_LAST_NAME,
+        is_superuser: true
+      })
+      console.log('Created Admin Account')
     }
     exists = await db.schema.hasTable('folders')
     if (!exists) {

@@ -12,6 +12,7 @@ interface File {
   link: string
   s3_key: string
   user_id: string
+  updated_at: Date
 }
 
 interface Folder {
@@ -118,7 +119,8 @@ class FileController {
       await Files.where({
         id: fileId
       }).update({
-        folder_id: folderId
+        folder_id: folderId,
+        updated_at: new Date()
       })
       let message: string = `${fileName} moved to`
       if (folderName !== 'null') {
@@ -146,6 +148,21 @@ class FileController {
         'folders.name as folder_name'
       ).from('files')
         .leftJoin('folders', 'files.folder_id', 'folders.id')
+      return res.status(200).json({ files })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  static async getAllFolders (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> {
+    try {
+      const files = await db.where(
+        'folders.user_id', req.user?.id
+      ).select(
+        db.raw('"folders"."displayName" as folder_name, count(files.name) as file_count')
+      ).from('folders')
+        .innerJoin('files', 'files.folder_id', 'folders.id')
+        .groupBy('folder_name')
       return res.status(200).json({ files })
     } catch (error) {
       next(error)

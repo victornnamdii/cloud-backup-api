@@ -115,7 +115,8 @@ class FileController {
                 yield Files.where({
                     id: fileId
                 }).update({
-                    folder_id: folderId
+                    folder_id: folderId,
+                    updated_at: new Date()
                 });
                 let message = `${fileName} moved to`;
                 if (folderName !== 'null') {
@@ -141,6 +142,20 @@ class FileController {
             try {
                 const files = yield db_1.default.where('files.user_id', (_a = req.user) === null || _a === void 0 ? void 0 : _a.id).select('files.displayName as file_name', 'link as download_link', 'folders.name as folder_name').from('files')
                     .leftJoin('folders', 'files.folder_id', 'folders.id');
+                return res.status(200).json({ files });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
+    static getAllFolders(req, res, next) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const files = yield db_1.default.where('folders.user_id', (_a = req.user) === null || _a === void 0 ? void 0 : _a.id).select(db_1.default.raw('"folders"."displayName" as folder_name, count(files.name) as file_count')).from('folders')
+                    .innerJoin('files', 'files.folder_id', 'folders.id')
+                    .groupBy('folder_name');
                 return res.status(200).json({ files });
             }
             catch (error) {

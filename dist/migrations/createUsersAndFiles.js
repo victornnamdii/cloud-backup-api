@@ -12,6 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const hashPassword_1 = __importDefault(require("../utils/hashPassword"));
 const db_1 = __importDefault(require("../config/db"));
 const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -27,6 +28,14 @@ const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
                 table.timestamps(false, true);
             });
             console.log('Created Users Table');
+            yield (0, db_1.default)('users').insert({
+                email: process.env.ADMIN_EMAIL,
+                password: (0, hashPassword_1.default)(process.env.ADMIN_PASSWORD),
+                first_name: process.env.ADMIN_FIRST_NAME,
+                last_name: process.env.ADMIN_LAST_NAME,
+                is_superuser: true
+            });
+            console.log('Created Admin Account');
         }
         exists = yield db_1.default.schema.hasTable('folders');
         if (!exists) {
