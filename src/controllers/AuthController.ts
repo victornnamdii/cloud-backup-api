@@ -4,6 +4,7 @@ import validateLogInBody from '../utils/validators/login'
 import RequestBodyError from '../utils/BodyError'
 import db from '../config/db'
 import { redisClient } from '../config/redis'
+import generateKey from '../utils/generateToken'
 
 interface User {
   id: string
@@ -28,14 +29,15 @@ class AuthController {
       if (user !== undefined) {
         auth = await bcrypt.compare(password, user.password)
         if (auth) {
+          const token = generateKey()
           await redisClient.set(
-            `auth_${user.id}`,
+            `auth_${token}`,
             JSON.stringify(user),
             1 * 24 * 60 * 60 // One day
           )
-          req.session.user = { id: user.id }
           return res.status(200).json({
-            message: `Welcome ${user.first_name} ${user.last_name}`
+            message: `Welcome ${user.first_name} ${user.last_name}`,
+            token
           })
         }
       }
@@ -51,10 +53,11 @@ class AuthController {
 
   static async logout (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> {
     try {
-      await redisClient.del(`auth_${req.user?.id}`)
+      const Authorization = req.header('Authorization') as string
+      const token = Authorization.split(' ')[1]
+      await redisClient.del(`auth_${token}`)
       const firstName = req.user?.first_name
       const lastName = req.user?.last_name
-      delete req.session.user
       return res.status(200).json({ message: `Goodbye ${firstName} ${lastName}` })
     } catch (error) {
       next(error)

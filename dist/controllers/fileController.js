@@ -32,7 +32,7 @@ class FileController {
                 const Files = (0, db_1.default)('files');
                 const file = yield Files.where({
                     name: req.body.name.toLowerCase(),
-                    folder_id: folderId,
+                    folder_id: folderId !== null && folderId !== void 0 ? folderId : null,
                     user_id: (_a = req.user) === null || _a === void 0 ? void 0 : _a.id
                 }).first();
                 if (file !== undefined) {

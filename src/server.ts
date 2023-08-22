@@ -1,9 +1,7 @@
 import express, { type Request, type Response, type Express, type NextFunction } from 'express'
 import dotenv from 'dotenv'
-import session from 'express-session'
-import cookieParser from 'cookie-parser'
 import startMigrations from './migrations/createUsersAndFiles'
-import { redisClient, sessionStore } from './config/redis'
+import { redisClient } from './config/redis'
 import errorHandler from './middlewares/errorMiddleware'
 import userRouter from './routes/userRoutes'
 import authRouter from './routes/authRoutes'
@@ -14,7 +12,6 @@ dotenv.config()
 
 const app: Express = express()
 const port = process.env.PORT ?? 6000
-const secret: string = process.env.SECRET_KEY as string
 
 // Check Redis
 redisClient.connect()
@@ -28,19 +25,6 @@ redisClient.connect()
 
 // middlewares
 app.use(express.json())
-app.use(cookieParser())
-app.use(session({
-  name: 'risevest-sid',
-  secret,
-  resave: false,
-  saveUninitialized: true,
-  store: sessionStore,
-  cookie: {
-    secure: process.env.NODE_ENV !== 'development',
-    httpOnly: true,
-    maxAge: 1 * 24 * 60 * 60 * 1000 // One day
-  }
-}))
 
 app.disable('x-powered-by')
 app.get('/', (req: Request, res: Response) => {

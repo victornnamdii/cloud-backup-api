@@ -11,13 +11,13 @@ interface User {
 
 const deserializeUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    if (req.session.user !== undefined) {
-      const user = await redisClient.get(`auth_${req.session.user.id}`)
+    const Authorization = req.header('Authorization')
+    if (Authorization !== undefined && Authorization.startsWith('Bearer ')) {
+      const token = Authorization.split(' ')[1]
+      const user = await redisClient.get(`auth_${token}`)
       if (user !== null) {
         const userObject: User = JSON.parse(user)
         req.user = userObject
-      } else {
-        delete req.session.user
       }
     }
     next()

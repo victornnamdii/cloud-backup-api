@@ -17,6 +17,7 @@ const login_1 = __importDefault(require("../utils/validators/login"));
 const BodyError_1 = __importDefault(require("../utils/BodyError"));
 const db_1 = __importDefault(require("../config/db"));
 const redis_1 = require("../config/redis");
+const generateToken_1 = __importDefault(require("../utils/generateToken"));
 /* eslint-disable-next-line @typescript-eslint/no-extraneous-class */
 class AuthController {
     static login(req, res, next) {
@@ -30,11 +31,12 @@ class AuthController {
                 if (user !== undefined) {
                     auth = yield bcrypt_1.default.compare(password, user.password);
                     if (auth) {
-                        yield redis_1.redisClient.set(`auth_${user.id}`, JSON.stringify(user), 1 * 24 * 60 * 60 // One day
+                        const token = (0, generateToken_1.default)();
+                        yield redis_1.redisClient.set(`auth_${token}`, JSON.stringify(user), 1 * 24 * 60 * 60 // One day
                         );
-                        req.session.user = { id: user.id };
                         return res.status(200).json({
-                            message: `Welcome ${user.first_name} ${user.last_name}`
+                            message: `Welcome ${user.first_name} ${user.last_name}`,
+                            token
                         });
                     }
                 }
@@ -50,13 +52,14 @@ class AuthController {
         });
     }
     static logout(req, res, next) {
-        var _a, _b, _c;
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                yield redis_1.redisClient.del(`auth_${(_a = req.user) === null || _a === void 0 ? void 0 : _a.id}`);
-                const firstName = (_b = req.user) === null || _b === void 0 ? void 0 : _b.first_name;
-                const lastName = (_c = req.user) === null || _c === void 0 ? void 0 : _c.last_name;
-                delete req.session.user;
+                const Authorization = req.header('Authorization');
+                const token = Authorization.split(' ')[1];
+                yield redis_1.redisClient.del(`auth_${token}`);
+                const firstName = (_a = req.user) === null || _a === void 0 ? void 0 : _a.first_name;
+                const lastName = (_b = req.user) === null || _b === void 0 ? void 0 : _b.last_name;
                 return res.status(200).json({ message: `Goodbye ${firstName} ${lastName}` });
             }
             catch (error) {

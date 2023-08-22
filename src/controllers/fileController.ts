@@ -39,7 +39,7 @@ class FileController {
       const Files = db<File>('files')
       const file = await Files.where({
         name: req.body.name.toLowerCase(),
-        folder_id: folderId,
+        folder_id: folderId ?? null,
         user_id: req.user?.id
       }).first()
       if (file !== undefined) {

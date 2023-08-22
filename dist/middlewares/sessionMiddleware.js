@@ -12,14 +12,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const redis_1 = require("../config/redis");
 const deserializeUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        if (req.session.user !== undefined) {
-            const user = yield redis_1.redisClient.get(`auth_${req.session.user.id}`);
+        const Authorization = req.header('Authorization');
+        if (Authorization !== undefined && Authorization.startsWith('Bearer ')) {
+            const token = Authorization.split(' ')[1];
+            const user = yield redis_1.redisClient.get(`auth_${token}`);
             if (user !== null) {
                 const userObject = JSON.parse(user);
                 req.user = userObject;
-            }
-            else {
-                delete req.session.user;
             }
         }
         next();

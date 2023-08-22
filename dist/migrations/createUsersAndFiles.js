@@ -30,7 +30,7 @@ const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
             console.log('Created Users Table');
             yield (0, db_1.default)('users').insert({
                 email: process.env.ADMIN_EMAIL,
-                password: (0, hashPassword_1.default)(process.env.ADMIN_PASSWORD),
+                password: yield (0, hashPassword_1.default)(process.env.ADMIN_PASSWORD),
                 first_name: process.env.ADMIN_FIRST_NAME,
                 last_name: process.env.ADMIN_LAST_NAME,
                 is_superuser: true
@@ -43,7 +43,12 @@ const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
                 table.uuid('id').primary().defaultTo(db_1.default.fn.uuid());
                 table.string('name', 100).notNullable();
                 table.string('displayName', 100).notNullable();
-                table.uuid('user_id').notNullable().references('id').inTable('users');
+                table.uuid('user_id')
+                    .notNullable()
+                    .references('id')
+                    .inTable('users')
+                    .onUpdate('CASCADE')
+                    .onDelete('CASCADE');
                 table.timestamps(false, true);
             });
             yield db_1.default.schema.alterTable('folders', (table) => {
@@ -60,10 +65,20 @@ const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
                 table.uuid('id').primary().defaultTo(db_1.default.fn.uuid());
                 table.string('name', 100).notNullable();
                 table.string('displayName', 100).notNullable();
-                table.uuid('folder_id').references('id').inTable('folders').nullable();
+                table.uuid('folder_id')
+                    .references('id')
+                    .inTable('folders')
+                    .onUpdate('CASCADE')
+                    .onDelete('CASCADE')
+                    .nullable();
                 table.string('link').notNullable();
                 table.string('s3_key').notNullable();
-                table.uuid('user_id').notNullable().references('id').inTable('users');
+                table.uuid('user_id')
+                    .notNullable()
+                    .references('id')
+                    .inTable('users')
+                    .onUpdate('CASCADE')
+                    .onDelete('CASCADE');
                 table.timestamps(false, true);
             });
             yield db_1.default.schema.alterTable('files', (table) => {
