@@ -156,14 +156,20 @@ class FileController {
 
   static async getAllFolders (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> {
     try {
-      const files = await db.where(
+      const folders = await db.where(
         'folders.user_id', req.user?.id
       ).select(
-        db.raw('"folders"."displayName" as folder_name, count(files.name) as file_count')
+        db.raw(
+          '"folders"."displayName" as folder_name, count(files.name) as file_count'
+        )
       ).from('folders')
         .innerJoin('files', 'files.folder_id', 'folders.id')
         .groupBy('folder_name')
-      return res.status(200).json({ files })
+
+      folders.forEach((folder) => {
+        folder.file_count = Number(folder.file_count)
+      })
+      return res.status(200).json({ folders })
     } catch (error) {
       next(error)
     }

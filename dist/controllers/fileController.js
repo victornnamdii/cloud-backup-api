@@ -153,10 +153,13 @@ class FileController {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const files = yield db_1.default.where('folders.user_id', (_a = req.user) === null || _a === void 0 ? void 0 : _a.id).select(db_1.default.raw('"folders"."displayName" as folder_name, count(files.name) as file_count')).from('folders')
+                const folders = yield db_1.default.where('folders.user_id', (_a = req.user) === null || _a === void 0 ? void 0 : _a.id).select(db_1.default.raw('"folders"."displayName" as folder_name, count(files.name) as file_count')).from('folders')
                     .innerJoin('files', 'files.folder_id', 'folders.id')
                     .groupBy('folder_name');
-                return res.status(200).json({ files });
+                folders.forEach((folder) => {
+                    folder.file_count = Number(folder.file_count);
+                });
+                return res.status(200).json({ folders });
             }
             catch (error) {
                 next(error);
