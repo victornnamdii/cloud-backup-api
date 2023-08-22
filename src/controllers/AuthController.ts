@@ -48,6 +48,17 @@ class AuthController {
       next(error)
     }
   }
+
+  static async logout (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> {
+    try {
+      await redisClient.del(`auth_${req.user?.id}`)
+      res.status(200).json({ message: `Goodbye ${req.user?.first_name} ${req.user?.last_name}` })
+      delete req.session.user
+      return
+    } catch (error) {
+      next(error)
+    }
+  }
 }
 
 export default AuthController

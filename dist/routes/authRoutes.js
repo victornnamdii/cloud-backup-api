@@ -9,4 +9,5 @@ const authMiddleware_1 = require("../middlewares/authMiddleware");
 const authRouter = (0, express_1.Router)();
 /* eslint-disable @typescript-eslint/no-misused-promises */
 authRouter.post('/login', authMiddleware_1.requireNoAuth, AuthController_1.default.login);
+authRouter.get('/logout', authMiddleware_1.requireAuth, AuthController_1.default.logout);
 exports.default = authRouter;

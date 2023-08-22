@@ -35,30 +35,32 @@ class FileController {
 
       const Files = db<File>('files')
       const file = await Files.where({
-        name: req.file.originalname.toLowerCase(),
-        folder_id: res.locals.folderId,
+        name: req.body.name.toLowerCase(),
+        folder_id: res.locals.folderId || null,
         user_id: req.user?.id
-      })
+      }).first()
       if (file !== undefined) {
-        return res.status(400).json({ error: `${req.file.originalname} already exists` })
+        if (req.file !== undefined) {
+          await deleteObject(req.file)
+        }
+        return res.status(400).json({ error: `${req.body.name} already exists` })
       }
 
       await Files.insert({
-        displayName: req.file.originalname,
-        name: req.file.originalname.toLowerCase(),
+        displayName: req.body.name,
+        name: req.body.name.toLowerCase(),
         folder_id: res.locals.folderId,
         link: req.file.location,
         s3_key: req.file.key,
         user_id: req.user?.id
       })
-      return res.status(201).json({ message: 'File succesfully uploaded' })
+      return res.status(201).json({
+        message: 'File succesfully uploaded',
+        link: req.file.location,
+      })
     } catch (error) {
       if (req.file !== undefined) {
-        deleteObject(req.file)
-          .then()
-          .catch(() => {
-            console.log('Bad Request')
-          })
+        await deleteObject(req.file)
       }
       console.log(error)
       if (error instanceof RequestBodyError) {
@@ -67,7 +69,7 @@ class FileController {
       /* eslint-disable @typescript-eslint/strict-boolean-expressions */
       // @ts-expect-error: Unreachable code error
       if (error?.message?.includes('unique')) {
-        return res.status(400).json({ error: `${req.file.originalname} already exists` })
+        return res.status(400).json({ error: `${req.body.name} already exists` })
       }
       next(error)
     }
@@ -118,7 +120,13 @@ class FileController {
       }).update({
         folder_id: folderId
       })
-      return res.status(201).json({ message: `${fileName} moved to ${folderName}` })
+      let message: string = `${fileName} moved to`
+      if (folderName !== 'null') {
+        message += ` ${folderName}`
+      } else {
+        message += ` root directory`
+      }
+      return res.status(201).json({ message })
     } catch (error) {
       /* eslint-disable @typescript-eslint/strict-boolean-expressions */
       // @ts-expect-error: Unreachable code error
@@ -132,11 +140,11 @@ class FileController {
   static async getAllFiles (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> {
     try {
       const files = await db.where(
-        "files.user_id", req.user?.id
+        'files.user_id', req.user?.id
       ).select(
-        'files.displayName',
-        'link',
-        'folders.name'
+        'files.displayName as file_name',
+        'link as download_link',
+        'folders.name as folder_name'
       ).from('files')
         .leftJoin('folders', 'files.folder_id', 'folders.id')
       return res.status(200).json({ files })

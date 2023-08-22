@@ -4,12 +4,18 @@ import multerS3 from 'multer-s3'
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { v4 } from 'uuid'
 
-// const accessKeyId: string = process.env.AWS_ACCESS_KEY_ID as string
-// const awsSecret: string = process.env.AWS_SECRET_ACCESS_KEY as string
-// const s3Region: string = process.env.S3_REGION as string
+const accessKeyId: string = process.env.AWS_ACCESS_KEY_ID as string
+const secretAccessKey: string = process.env.AWS_SECRET_ACCESS_KEY as string
+const region: string = process.env.S3_REGION as string
 const s3Bucket: string = process.env.S3_BUCKET as string
 
-const s3client: S3Client = new S3Client({})
+const s3client: S3Client = new S3Client({
+  credentials: {
+    accessKeyId,
+    secretAccessKey
+  },
+  region
+})
 
 const deleteObject = async (file: Express.MulterS3.File): Promise<void> => {
   const deleteCommand = new DeleteObjectCommand({
@@ -62,10 +68,10 @@ const uploadToS3 = (req: Request, res: Response, next: NextFunction): void => {
         }
         if (err instanceof multer.MulterError
         ) {
-          res.status(400).json({ error: err.message })
+          return res.status(400).json({ error: err.message })
         } else {
           console.log(err)
-          res.status(400).json({
+          return res.status(400).json({
             error: 'Error uploading image'
           })
         }

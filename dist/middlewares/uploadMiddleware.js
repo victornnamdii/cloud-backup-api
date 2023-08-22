@@ -17,11 +17,17 @@ const multer_1 = __importDefault(require("multer"));
 const multer_s3_1 = __importDefault(require("multer-s3"));
 const client_s3_1 = require("@aws-sdk/client-s3");
 const uuid_1 = require("uuid");
-// const accessKeyId: string = process.env.AWS_ACCESS_KEY_ID as string
-// const awsSecret: string = process.env.AWS_SECRET_ACCESS_KEY as string
-// const s3Region: string = process.env.S3_REGION as string
+const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
+const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+const region = process.env.S3_REGION;
 const s3Bucket = process.env.S3_BUCKET;
-const s3client = new client_s3_1.S3Client({});
+const s3client = new client_s3_1.S3Client({
+    credentials: {
+        accessKeyId,
+        secretAccessKey
+    },
+    region
+});
 const deleteObject = (file) => __awaiter(void 0, void 0, void 0, function* () {
     const deleteCommand = new client_s3_1.DeleteObjectCommand({
         Bucket: s3Bucket,
@@ -68,11 +74,11 @@ const uploadToS3 = (req, res, next) => {
                     });
                 }
                 if (err instanceof multer_1.default.MulterError) {
-                    res.status(400).json({ error: err.message });
+                    return res.status(400).json({ error: err.message });
                 }
                 else {
                     console.log(err);
-                    res.status(400).json({
+                    return res.status(400).json({
                         error: 'Error uploading image'
                     });
                 }

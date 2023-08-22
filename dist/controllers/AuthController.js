@@ -49,5 +49,19 @@ class AuthController {
             }
         });
     }
+    static logout(req, res, next) {
+        var _a, _b, _c;
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield redis_1.redisClient.del(`auth_${(_a = req.user) === null || _a === void 0 ? void 0 : _a.id}`);
+                res.status(200).json({ message: `Goodbye ${(_b = req.user) === null || _b === void 0 ? void 0 : _b.first_name} ${(_c = req.user) === null || _c === void 0 ? void 0 : _c.last_name}` });
+                delete req.session.user;
+                return;
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
 }
 exports.default = AuthController;

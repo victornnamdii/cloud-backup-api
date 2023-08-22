@@ -29,30 +29,32 @@ class FileController {
                 }
                 const Files = (0, db_1.default)('files');
                 const file = yield Files.where({
-                    name: req.file.originalname.toLowerCase(),
-                    folder_id: res.locals.folderId,
+                    name: req.body.name.toLowerCase(),
+                    folder_id: res.locals.folderId || null,
                     user_id: (_a = req.user) === null || _a === void 0 ? void 0 : _a.id
-                });
+                }).first();
                 if (file !== undefined) {
-                    return res.status(400).json({ error: `${req.file.originalname} already exists` });
+                    if (req.file !== undefined) {
+                        yield (0, uploadMiddleware_1.deleteObject)(req.file);
+                    }
+                    return res.status(400).json({ error: `${req.body.name} already exists` });
                 }
                 yield Files.insert({
-                    displayName: req.file.originalname,
-                    name: req.file.originalname.toLowerCase(),
+                    displayName: req.body.name,
+                    name: req.body.name.toLowerCase(),
                     folder_id: res.locals.folderId,
                     link: req.file.location,
                     s3_key: req.file.key,
                     user_id: (_b = req.user) === null || _b === void 0 ? void 0 : _b.id
                 });
-                return res.status(201).json({ message: 'File succesfully uploaded' });
+                return res.status(201).json({
+                    message: 'File succesfully uploaded',
+                    link: req.file.location,
+                });
             }
             catch (error) {
                 if (req.file !== undefined) {
-                    (0, uploadMiddleware_1.deleteObject)(req.file)
-                        .then()
-                        .catch(() => {
-                        console.log('Bad Request');
-                    });
+                    yield (0, uploadMiddleware_1.deleteObject)(req.file);
                 }
                 console.log(error);
                 if (error instanceof BodyError_1.default) {
@@ -61,7 +63,7 @@ class FileController {
                 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
                 // @ts-expect-error: Unreachable code error
                 if ((_c = error === null || error === void 0 ? void 0 : error.message) === null || _c === void 0 ? void 0 : _c.includes('unique')) {
-                    return res.status(400).json({ error: `${req.file.originalname} already exists` });
+                    return res.status(400).json({ error: `${req.body.name} already exists` });
                 }
                 next(error);
             }
@@ -115,7 +117,14 @@ class FileController {
                 }).update({
                     folder_id: folderId
                 });
-                return res.status(201).json({ message: `${fileName} moved to ${folderName}` });
+                let message = `${fileName} moved to`;
+                if (folderName !== 'null') {
+                    message += ` ${folderName}`;
+                }
+                else {
+                    message += ` root directory`;
+                }
+                return res.status(201).json({ message });
             }
             catch (error) {
                 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
@@ -131,7 +140,7 @@ class FileController {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const files = yield db_1.default.where("files.user_id", (_a = req.user) === null || _a === void 0 ? void 0 : _a.id).select('files.displayName', 'link', 'folders.name').from('files')
+                const files = yield db_1.default.where('files.user_id', (_a = req.user) === null || _a === void 0 ? void 0 : _a.id).select('files.displayName as file_name', 'link as download_link', 'folders.name as folder_name').from('files')
                     .leftJoin('folders', 'files.folder_id', 'folders.id');
                 return res.status(200).json({ files });
             }

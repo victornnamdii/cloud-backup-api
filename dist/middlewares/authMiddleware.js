@@ -14,6 +14,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.requireFolderQueryAuth = exports.requireFolderAuth = exports.requireAuth = exports.requireNoAuth = void 0;
 const db_1 = __importDefault(require("../config/db"));
+const movefile_1 = __importDefault(require("../utils/validators/movefile"));
+const BodyError_1 = __importDefault(require("../utils/BodyError"));
 const requireNoAuth = (req, res, next) => {
     try {
         if (req.user !== undefined) {
@@ -43,32 +45,68 @@ const requireFolderAuth = (req, res, next) => __awaiter(void 0, void 0, void 0, 
         if (req.user === undefined) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
-        const { folderName } = req.params;
-        const { fileName } = req.body;
+        (0, movefile_1.default)(req.body);
+        let folderName = req.params.folderName;
+        const { fileName, source } = req.body;
+        if (folderName === 'null') {
+            folderName = null;
+        }
         const Folders = (0, db_1.default)('folders');
-        const folder = yield Folders.where({
-            name: folderName.toLowerCase(),
-            user_id: req.user.id
-        }).first();
-        if (folder === undefined) {
-            return res.status(400).json({ error: `You do not have a folder named ${folderName}` });
+        let destinationFolderId = null;
+        if (folderName !== null) {
+            const destinationFolder = yield Folders.where({
+                name: folderName.toLowerCase(),
+                user_id: req.user.id
+            }).first();
+            if (destinationFolder === undefined) {
+                return res.status(400).json({ error: `You do not have a folder named ${folderName}` });
+            }
+            destinationFolderId = destinationFolder.id;
+        }
+        let sourceFolder;
+        if (source !== null && source !== undefined) {
+            sourceFolder = yield (0, db_1.default)('folders').where({
+                name: source.toLowerCase(),
+                user_id: req.user.id
+            }).first();
+            if (sourceFolder === undefined) {
+                return res.status(400).json({ error: `You do not have a folder named ${source}` });
+            }
         }
         const Files = (0, db_1.default)('files');
         const file = yield Files.where({
             name: fileName.toLowerCase(),
-            user_id: req.user.id
+            user_id: req.user.id,
+            folder_id: sourceFolder ? sourceFolder.id : null
         }).first('folder_id', 'id');
         if (file === undefined) {
-            return res.status(400).json({ error: `You do not have a file named ${fileName}` });
+            let message = `You do not have a file named ${fileName}`;
+            if (sourceFolder !== undefined) {
+                message += ` in ${source} folder`;
+            }
+            else {
+                message += ` in root directory`;
+            }
+            return res.status(400).json({ error: message });
         }
-        if (file.folder_id === folder.id) {
-            return res.status(400).json({ error: `${fileName} already exists in ${folderName} folder` });
+        if (file.folder_id === destinationFolderId) {
+            let message = `${fileName} already exists in`;
+            if (destinationFolderId === null) {
+                message += ` root directory`;
+            }
+            else {
+                message += ` ${folderName} folder`;
+            }
+            return res.status(400).json({ error: message });
         }
         res.locals.fileId = file.id;
-        res.locals.folderId = folder.id;
+        res.locals.folderId = destinationFolderId;
         next();
     }
     catch (error) {
+        if (error instanceof BodyError_1.default) {
+            return res.status(400).json({ error: error.message });
+        }
         next(error);
     }
 });
