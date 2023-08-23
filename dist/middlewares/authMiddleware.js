@@ -55,7 +55,7 @@ const requireAdminAuth = (req, res, next) => {
 };
 exports.requireAdminAuth = requireAdminAuth;
 const requireFolderAuth = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b;
     try {
         if (req.user === undefined) {
             return res.status(401).json({ error: 'Unauthorized' });
@@ -116,6 +116,7 @@ const requireFolderAuth = (req, res, next) => __awaiter(void 0, void 0, void 0, 
         }
         res.locals.fileId = file.id;
         res.locals.fileHistory = file.history;
+        res.locals.source = (_b = sourceFolder === null || sourceFolder === void 0 ? void 0 : sourceFolder.name) !== null && _b !== void 0 ? _b : 'root directory';
         res.locals.folderId = destinationFolderId;
         next();
     }

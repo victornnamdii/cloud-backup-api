@@ -64,7 +64,7 @@ class FileController {
                     s3_key: req.file.key,
                     user_id: (_b = req.user) === null || _b === void 0 ? void 0 : _b.id,
                     mimetype: req.file.mimetype,
-                    history: JSON.stringify([{ event: "Created", date: new Date() }])
+                    history: JSON.stringify([{ event: 'Created', date: new Date() }])
                 }, ['id']);
                 return res.status(201).json({
                     message: 'File succesfully uploaded',
@@ -133,13 +133,13 @@ class FileController {
             const { fileName } = req.body;
             const { folderName } = req.params;
             try {
-                const { folderId, fileId, fileHistory } = res.locals;
-                let message = `${fileName} moved to`;
+                const { folderId, fileId, fileHistory, source } = res.locals;
+                let message = `${fileName} moved from`;
                 if (folderName !== 'null') {
-                    message += ` ${folderName}`;
+                    message += ` ${source} to ${folderName}`;
                 }
                 else {
-                    message += ' root directory';
+                    message += ` ${source} to root directory`;
                 }
                 const date = new Date();
                 fileHistory.push({ event: message, date });
@@ -281,7 +281,7 @@ class FileController {
                     return res.status(400).json({ error: 'Invalid file id' });
                 }
                 const date = new Date();
-                const updates = { updated_at: date, history: "[]" };
+                const updates = { updated_at: date, history: '[]' };
                 if (req.body.name !== undefined) {
                     // @ts-expect-error: Unreachable code error
                     updates.name = req.body.name.toLowerCase();
@@ -299,7 +299,7 @@ class FileController {
                     }
                     // @ts-expect-error: Unreachable code error
                     const message = `Name changed from ${subquery.displayName} to ${updates.displayName}`;
-                    let fileHistory = subquery.history;
+                    const fileHistory = subquery.history;
                     fileHistory.push({ event: message, date });
                     updates.history = JSON.stringify(fileHistory);
                     yield (0, db_1.default)('files')

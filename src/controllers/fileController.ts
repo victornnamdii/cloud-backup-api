@@ -20,7 +20,7 @@ interface File {
   user_id: string
   updated_at: Date
   mimetype: string
-  history: string | { event: string, date: Date }[]
+  history: string | Array<{ event: string, date: Date }>
 }
 
 interface Folder {
@@ -74,7 +74,7 @@ class FileController {
         s3_key: req.file.key,
         user_id: req.user?.id,
         mimetype: req.file.mimetype,
-        history: JSON.stringify([{ event: "Created", date: new Date() }])
+        history: JSON.stringify([{ event: 'Created', date: new Date() }])
       }, ['id'])
       return res.status(201).json({
         message: 'File succesfully uploaded',
@@ -138,16 +138,16 @@ class FileController {
     const { fileName } = req.body
     const { folderName } = req.params
     try {
-      const { folderId, fileId, fileHistory } = res.locals
-      let message: string = `${fileName} moved to`
+      const { folderId, fileId, fileHistory, source } = res.locals
+      let message: string = `${fileName} moved from`
       if (folderName !== 'null') {
-        message += ` ${folderName}`
+        message += ` ${source} to ${folderName}`
       } else {
-        message += ' root directory'
+        message += ` ${source} to root directory`
       }
 
       const date = new Date()
-      fileHistory.push({ event: message, date})
+      fileHistory.push({ event: message, date })
       const Files = db<File>('files')
       await Files.where({
         id: fileId
@@ -184,7 +184,7 @@ class FileController {
             'files.id as file_id',
             'files.displayName as file_name',
             'folders.displayName as folder_name',
-            'files.history as file_history',
+            'files.history as file_history'
           ).from('files')
           .leftJoin('folders', 'files.folder_id', 'folders.id')
       }
@@ -291,9 +291,9 @@ class FileController {
       }
       const date = new Date()
       const updates: {
-        updated_at: Date,
+        updated_at: Date
         history: string
-      } = { updated_at: date, history: "[]" }
+      } = { updated_at: date, history: '[]' }
       if (req.body.name !== undefined) {
         // @ts-expect-error: Unreachable code error
         updates.name = req.body.name.toLowerCase()
@@ -311,7 +311,7 @@ class FileController {
         }
         // @ts-expect-error: Unreachable code error
         const message = `Name changed from ${subquery.displayName} to ${updates.displayName}`
-        let fileHistory = subquery.history as { event: string, date: Date }[]
+        const fileHistory = subquery.history as Array<{ event: string, date: Date }>
         fileHistory.push({ event: message, date })
 
         updates.history = JSON.stringify(fileHistory)

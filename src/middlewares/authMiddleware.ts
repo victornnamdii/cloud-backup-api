@@ -13,7 +13,7 @@ interface File {
   link: string
   s3_key: string
   user_id: string
-  history: { event: string, date: Date }[]
+  history: Array<{ event: string, date: Date }>
 }
 interface Folder {
   id: string
@@ -118,6 +118,7 @@ const requireFolderAuth = async (req: Request, res: Response, next: NextFunction
 
     res.locals.fileId = file.id
     res.locals.fileHistory = file.history
+    res.locals.source = sourceFolder?.name ?? 'root directory'
     res.locals.folderId = destinationFolderId
     next()
   } catch (error) {
