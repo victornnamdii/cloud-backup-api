@@ -175,8 +175,10 @@ class FileController {
           'files.user_id', req.user?.id
         ).select(
           'files.id as file_id',
+          'files.user_id as file_user_id',
           'files.displayName as file_name',
-          'folders.displayName as folder_name'
+          'folders.displayName as folder_name',
+          'files.history as file_history'
         ).from('files')
           .leftJoin('folders', 'files.folder_id', 'folders.id')
       } else {
