@@ -68,6 +68,7 @@ const createTables = async (): Promise<void> => {
           .onDelete('CASCADE')
         table.boolean('safe').defaultTo(true)
         table.string('mimetype').nullable()
+        table.json('history').notNullable()
         table.timestamps(false, true)
       })
       await db.schema.alterTable('files', (table) => {

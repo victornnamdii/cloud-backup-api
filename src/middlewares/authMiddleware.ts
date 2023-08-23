@@ -13,6 +13,7 @@ interface File {
   link: string
   s3_key: string
   user_id: string
+  history: { event: string, date: Date }[]
 }
 interface Folder {
   id: string
@@ -95,7 +96,7 @@ const requireFolderAuth = async (req: Request, res: Response, next: NextFunction
       name: fileName.toLowerCase(),
       user_id: req.user.id,
       folder_id: sourceFolder?.id ?? null
-    }).first('folder_id', 'id')
+    }).first('folder_id', 'id', 'history')
     if (file === undefined) {
       let message: string = `You do not have a file named ${fileName}`
       if (sourceFolder !== undefined) {
@@ -116,6 +117,7 @@ const requireFolderAuth = async (req: Request, res: Response, next: NextFunction
     }
 
     res.locals.fileId = file.id
+    res.locals.fileHistory = file.history
     res.locals.folderId = destinationFolderId
     next()
   } catch (error) {

@@ -20,6 +20,7 @@ interface File {
   user_id: string
   updated_at: Date
   mimetype: string
+  history: string | { event: string, date: Date }[]
 }
 
 interface Folder {
@@ -72,7 +73,8 @@ class FileController {
         link: req.file.location,
         s3_key: req.file.key,
         user_id: req.user?.id,
-        mimetype: req.file.mimetype
+        mimetype: req.file.mimetype,
+        history: JSON.stringify([{ event: "Created", date: new Date() }])
       }, ['id'])
       return res.status(201).json({
         message: 'File succesfully uploaded',
@@ -136,21 +138,24 @@ class FileController {
     const { fileName } = req.body
     const { folderName } = req.params
     try {
-      const { folderId, fileId } = res.locals
-
-      const Files = db<File>('files')
-      await Files.where({
-        id: fileId
-      }).update({
-        folder_id: folderId,
-        updated_at: new Date()
-      })
+      const { folderId, fileId, fileHistory } = res.locals
       let message: string = `${fileName} moved to`
       if (folderName !== 'null') {
         message += ` ${folderName}`
       } else {
         message += ' root directory'
       }
+
+      const date = new Date()
+      fileHistory.push({ event: message, date})
+      const Files = db<File>('files')
+      await Files.where({
+        id: fileId
+      }).update({
+        folder_id: folderId,
+        history: JSON.stringify(fileHistory),
+        updated_at: date
+      })
       return res.status(201).json({ message })
     } catch (error) {
       // @ts-expect-error: Unreachable code error
@@ -211,7 +216,7 @@ class FileController {
     }
   }
 
-  static async localGetFolderFiles (folderId: string): Promise<{ s3_key: string }[]> {
+  static async localGetFolderFiles (folderId: string): Promise<Array<{ s3_key: string }>> {
     const files = await db<File>('files')
       .where('folder_id', '=', folderId)
       .select('s3_key')
@@ -283,29 +288,36 @@ class FileController {
       if (!isUUID(fileId, 4)) {
         return res.status(400).json({ error: 'Invalid file id' })
       }
-      const updates = { updated_at: new Date() }
+      const date = new Date()
+      const updates: {
+        updated_at: Date,
+        history: string
+      } = { updated_at: date, history: "[]" }
       if (req.body.name !== undefined) {
         // @ts-expect-error: Unreachable code error
         updates.name = req.body.name.toLowerCase()
         // @ts-expect-error: Unreachable code error
         updates.displayName = req.body.name
       }
-      if (Object.keys(updates).length > 1) {
+      if (Object.keys(updates).length > 2) {
         const subquery = await db<File>('files')
           .where({
             user_id: req.user?.id,
             id: fileId
-          }).first('id')
+          }).first('id', 'displayName', 'history')
         if (subquery === undefined) {
           return res.status(404).json({ error: `You do not have a file with id ${fileId}` })
         }
+        // @ts-expect-error: Unreachable code error
+        const message = `Name changed from ${subquery.displayName} to ${updates.displayName}`
+        let fileHistory = subquery.history as { event: string, date: Date }[]
+        fileHistory.push({ event: message, date })
+
+        updates.history = JSON.stringify(fileHistory)
         await db<File>('files')
           .update(updates)
           .where('id', '=', fileId)
-        return res.status(201).json({
-          // @ts-expect-error: Unreachable code error
-          message: `${updates.displayName} successfully updated`
-        })
+        return res.status(201).json({ message })
       }
       return res.status(400).json({ error: 'No field specified to update' })
     } catch (error) {
@@ -370,7 +382,6 @@ class FileController {
       await db<Folder>('folders')
         .del()
         .where('id', '=', subquery.id)
-
 
       return res.status(201).json({
         message: `${folderName} successfully deleted`

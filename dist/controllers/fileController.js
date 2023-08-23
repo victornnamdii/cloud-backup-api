@@ -63,7 +63,8 @@ class FileController {
                     link: req.file.location,
                     s3_key: req.file.key,
                     user_id: (_b = req.user) === null || _b === void 0 ? void 0 : _b.id,
-                    mimetype: req.file.mimetype
+                    mimetype: req.file.mimetype,
+                    history: JSON.stringify([{ event: "Created", date: new Date() }])
                 }, ['id']);
                 return res.status(201).json({
                     message: 'File succesfully uploaded',
@@ -132,14 +133,7 @@ class FileController {
             const { fileName } = req.body;
             const { folderName } = req.params;
             try {
-                const { folderId, fileId } = res.locals;
-                const Files = (0, db_1.default)('files');
-                yield Files.where({
-                    id: fileId
-                }).update({
-                    folder_id: folderId,
-                    updated_at: new Date()
-                });
+                const { folderId, fileId, fileHistory } = res.locals;
                 let message = `${fileName} moved to`;
                 if (folderName !== 'null') {
                     message += ` ${folderName}`;
@@ -147,6 +141,16 @@ class FileController {
                 else {
                     message += ' root directory';
                 }
+                const date = new Date();
+                fileHistory.push({ event: message, date });
+                const Files = (0, db_1.default)('files');
+                yield Files.where({
+                    id: fileId
+                }).update({
+                    folder_id: folderId,
+                    history: JSON.stringify(fileHistory),
+                    updated_at: date
+                });
                 return res.status(201).json({ message });
             }
             catch (error) {
@@ -276,29 +280,32 @@ class FileController {
                 if (!(0, isUUID_1.default)(fileId, 4)) {
                     return res.status(400).json({ error: 'Invalid file id' });
                 }
-                const updates = { updated_at: new Date() };
+                const date = new Date();
+                const updates = { updated_at: date, history: "[]" };
                 if (req.body.name !== undefined) {
                     // @ts-expect-error: Unreachable code error
                     updates.name = req.body.name.toLowerCase();
                     // @ts-expect-error: Unreachable code error
                     updates.displayName = req.body.name;
                 }
-                if (Object.keys(updates).length > 1) {
+                if (Object.keys(updates).length > 2) {
                     const subquery = yield (0, db_1.default)('files')
                         .where({
                         user_id: (_a = req.user) === null || _a === void 0 ? void 0 : _a.id,
                         id: fileId
-                    }).first('id');
+                    }).first('id', 'displayName', 'history');
                     if (subquery === undefined) {
                         return res.status(404).json({ error: `You do not have a file with id ${fileId}` });
                     }
+                    // @ts-expect-error: Unreachable code error
+                    const message = `Name changed from ${subquery.displayName} to ${updates.displayName}`;
+                    let fileHistory = subquery.history;
+                    fileHistory.push({ event: message, date });
+                    updates.history = JSON.stringify(fileHistory);
                     yield (0, db_1.default)('files')
                         .update(updates)
                         .where('id', '=', fileId);
-                    return res.status(201).json({
-                        // @ts-expect-error: Unreachable code error
-                        message: `${updates.displayName} successfully updated`
-                    });
+                    return res.status(201).json({ message });
                 }
                 return res.status(400).json({ error: 'No field specified to update' });
             }

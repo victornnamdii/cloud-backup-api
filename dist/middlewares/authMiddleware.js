@@ -93,7 +93,7 @@ const requireFolderAuth = (req, res, next) => __awaiter(void 0, void 0, void 0, 
             name: fileName.toLowerCase(),
             user_id: req.user.id,
             folder_id: (_a = sourceFolder === null || sourceFolder === void 0 ? void 0 : sourceFolder.id) !== null && _a !== void 0 ? _a : null
-        }).first('folder_id', 'id');
+        }).first('folder_id', 'id', 'history');
         if (file === undefined) {
             let message = `You do not have a file named ${fileName}`;
             if (sourceFolder !== undefined) {
@@ -115,6 +115,7 @@ const requireFolderAuth = (req, res, next) => __awaiter(void 0, void 0, void 0, 
             return res.status(400).json({ error: message });
         }
         res.locals.fileId = file.id;
+        res.locals.fileHistory = file.history;
         res.locals.folderId = destinationFolderId;
         next();
     }
