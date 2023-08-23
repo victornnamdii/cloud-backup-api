@@ -11,7 +11,7 @@ const validateNewAdminBody = (body: newAdminParams): void => {
     body.email === null ||
     typeof body.email !== 'string'
   ) {
-    throw new RequestBodyError('Please enter your email')
+    throw new RequestBodyError('Please enter an email')
   }
 
   const email = body.email
@@ -21,11 +21,17 @@ const validateNewAdminBody = (body: newAdminParams): void => {
     throw new RequestBodyError('Please enter a valid email')
   }
 
-  if (body.firstName === undefined || typeof body.firstName !== 'string') {
+  if (body.firstName === undefined ||
+    typeof body.firstName !== 'string' ||
+    body.firstName === ''
+  ) {
     throw new RequestBodyError('Please enter a first name')
   }
 
-  if (body.lastName === undefined || typeof body.lastName !== 'string') {
+  if (body.lastName === undefined ||
+    typeof body.lastName !== 'string' ||
+    body.lastName === ''
+  ) {
     throw new RequestBodyError('Please enter a last name')
   }
 }

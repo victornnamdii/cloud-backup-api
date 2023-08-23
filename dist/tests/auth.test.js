@@ -47,7 +47,7 @@ const redis_1 = require("../config/redis");
 dotenv_1.default.config();
 chai_1.default.use(chai_http_1.default);
 (0, mocha_1.describe)('Authentication Tests', () => {
-    before(() => __awaiter(void 0, void 0, void 0, function* () {
+    (0, mocha_1.before)(() => __awaiter(void 0, void 0, void 0, function* () {
         yield (0, db_1.default)('users')
             .insert({
             email: process.env.TESTS_MAIL,
@@ -93,7 +93,7 @@ chai_1.default.use(chai_http_1.default);
             (0, chai_1.expect)(res.body).to.have.property('error', 'Incorrect email/password');
             (0, chai_1.expect)(res.body).to.not.have.property('token');
         }));
-        (0, mocha_1.it)('should not log user in, alt 2', () => __awaiter(void 0, void 0, void 0, function* () {
+        (0, mocha_1.it)('should log user in, alt', () => __awaiter(void 0, void 0, void 0, function* () {
             let res = yield chai_1.default.request(server_1.default).post('/login').send({
                 email: process.env.TESTS_MAIL,
                 password: 'test123'
@@ -107,13 +107,14 @@ chai_1.default.use(chai_http_1.default);
                 email: process.env.TESTS_MAIL,
                 password: 'test123'
             }).set('Authorization', `Bearer ${res.body.token}`);
-            (0, chai_1.expect)(res).to.have.status(401);
+            (0, chai_1.expect)(res).to.have.status(200);
             (0, chai_1.expect)(res.body).to.be.an('object');
-            (0, chai_1.expect)(res.body).to.have.property('error', 'You are already authorized');
-            (0, chai_1.expect)(res.body).to.not.have.property('token');
+            (0, chai_1.expect)(res.body).to.have.property('token');
+            const token2 = res.body.token;
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token2)}`);
         }));
-        (0, mocha_1.it)('should not log user in, alt 3', () => __awaiter(void 0, void 0, void 0, function* () {
+        (0, mocha_1.it)('should log user in, alt 2', () => __awaiter(void 0, void 0, void 0, function* () {
             let res = yield chai_1.default.request(server_1.default).post('/login').send({
                 email: process.env.TESTS_MAIL,
                 password: 'test123'
@@ -128,11 +129,12 @@ chai_1.default.use(chai_http_1.default);
                 email: process.env.TESTS_MAIL,
                 password: 'test123'
             });
-            (0, chai_1.expect)(res).to.have.status(401);
+            (0, chai_1.expect)(res).to.have.status(200);
             (0, chai_1.expect)(res.body).to.be.an('object');
-            (0, chai_1.expect)(res.body).to.have.property('error', 'You are already authorized');
-            (0, chai_1.expect)(res.body).to.not.have.property('token');
+            (0, chai_1.expect)(res.body).to.have.property('token');
+            const token2 = res.body.token;
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token2)}`);
         }));
         (0, mocha_1.it)('should return no email error', () => __awaiter(void 0, void 0, void 0, function* () {
             const res = yield chai_1.default.request(server_1.default).post('/login').send({
@@ -141,6 +143,16 @@ chai_1.default.use(chai_http_1.default);
             (0, chai_1.expect)(res).to.have.status(400);
             (0, chai_1.expect)(res.body).to.be.an('object');
             (0, chai_1.expect)(res.body).to.have.property('error', 'Please enter your email');
+            (0, chai_1.expect)(res.body).to.not.have.property('token');
+        }));
+        (0, mocha_1.it)('should return empty email error', () => __awaiter(void 0, void 0, void 0, function* () {
+            const res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: '',
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(400);
+            (0, chai_1.expect)(res.body).to.be.an('object');
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Please enter a valid email');
             (0, chai_1.expect)(res.body).to.not.have.property('token');
         }));
         (0, mocha_1.it)('should return no email error, alt', () => __awaiter(void 0, void 0, void 0, function* () {
@@ -374,6 +386,32 @@ chai_1.default.use(chai_http_1.default);
             yield (0, db_1.default)('users')
                 .where({ email: 'lowadmin@gmail.com' })
                 .del();
+        }));
+        (0, mocha_1.it)('should revoke user\'s session, alt', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            (0, chai_1.expect)(res.body).to.be.an('object');
+            (0, chai_1.expect)(res.body).to.have.property('message', 'Welcome Victor Ilodiuba');
+            (0, chai_1.expect)(res.body).to.have.property('token');
+            const userToken = res.body.token;
+            const userId = res.body.id;
+            res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.ADMIN_EMAIL,
+                password: process.env.ADMIN_PASSWORD
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            (0, chai_1.expect)(res.body).to.be.an('object');
+            (0, chai_1.expect)(res.body).to.have.property('token');
+            const adminToken = res.body.token;
+            res = yield chai_1.default.request(server_1.default).delete(`/session/${userId}?token=${adminToken}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            (0, chai_1.expect)(res.body).to.be.an('object');
+            (0, chai_1.expect)(res.body).to.have.property('message', 'Victor Ilodiuba\'s session revoked');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(userToken)}`);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
         }));
         (0, mocha_1.it)('should say unauthorized, alt', () => __awaiter(void 0, void 0, void 0, function* () {
             let res = yield chai_1.default.request(server_1.default).post('/login').send({

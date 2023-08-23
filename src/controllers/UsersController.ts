@@ -46,7 +46,6 @@ class UserController {
         email: req.body.email
       })
     } catch (error) {
-      console.log(error)
       if (error instanceof RequestBodyError) {
         return res.status(400).json({ error: error.message })
       }
@@ -83,7 +82,6 @@ class UserController {
         password: adminPassword
       })
     } catch (error) {
-      console.log(error)
       if (error instanceof RequestBodyError) {
         return res.status(400).json({ error: error.message })
       }

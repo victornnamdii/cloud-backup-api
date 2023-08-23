@@ -42,7 +42,6 @@ class UserController {
                 });
             }
             catch (error) {
-                console.log(error);
                 if (error instanceof BodyError_1.default) {
                     return res.status(400).json({ error: error.message });
                 }
@@ -75,7 +74,6 @@ class UserController {
                 });
             }
             catch (error) {
-                console.log(error);
                 if (error instanceof BodyError_1.default) {
                     return res.status(400).json({ error: error.message });
                 }

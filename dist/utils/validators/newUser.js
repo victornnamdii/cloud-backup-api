@@ -22,10 +22,14 @@ const validateNewUserBody = (body) => {
     if (body.password.length < 6) {
         throw new BodyError_1.default('Please enter a password of atleast six(6) characters');
     }
-    if (body.firstName === undefined || typeof body.firstName !== 'string') {
+    if (body.firstName === undefined ||
+        typeof body.firstName !== 'string' ||
+        body.firstName === '') {
         throw new BodyError_1.default('Please enter your first name');
     }
-    if (body.lastName === undefined || typeof body.lastName !== 'string') {
+    if (body.lastName === undefined ||
+        typeof body.lastName !== 'string' ||
+        body.lastName === '') {
         throw new BodyError_1.default('Please enter your last name');
     }
 };

@@ -29,11 +29,17 @@ const validateNewUserBody = (body: newUserParams): void => {
     throw new RequestBodyError('Please enter a password of atleast six(6) characters')
   }
 
-  if (body.firstName === undefined || typeof body.firstName !== 'string') {
+  if (body.firstName === undefined ||
+    typeof body.firstName !== 'string' ||
+    body.firstName === ''
+  ) {
     throw new RequestBodyError('Please enter your first name')
   }
 
-  if (body.lastName === undefined || typeof body.lastName !== 'string') {
+  if (body.lastName === undefined ||
+    typeof body.lastName !== 'string' ||
+    body.lastName === ''
+  ) {
     throw new RequestBodyError('Please enter your last name')
   }
 }

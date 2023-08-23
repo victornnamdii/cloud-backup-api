@@ -1,5 +1,5 @@
 import chai, { expect } from 'chai'
-import { after, describe, it } from 'mocha'
+import { before, after, describe, it } from 'mocha'
 import dotenv from 'dotenv'
 import chaiHttp from 'chai-http'
 import { v4 } from 'uuid'
@@ -85,7 +85,7 @@ describe('Authentication Tests', () => {
       expect(res.body).to.not.have.property('token')
     })
 
-    it('should not log user in, alt 2', async () => {
+    it('should log user in, alt', async () => {
       let res = await chai.request(app).post('/login').send({
         email: process.env.TESTS_MAIL,
         password: 'test123'
@@ -105,18 +105,16 @@ describe('Authentication Tests', () => {
         password: 'test123'
       }).set('Authorization', `Bearer ${res.body.token}`)
 
-      expect(res).to.have.status(401)
+      expect(res).to.have.status(200)
       expect(res.body).to.be.an('object')
-      expect(res.body).to.have.property(
-        'error',
-        'You are already authorized'
-      )
-      expect(res.body).to.not.have.property('token')
+      expect(res.body).to.have.property('token')
+      const token2 = res.body.token
 
       await redisClient.del(`auth_${decodeURIComponent(token)}`)
+      await redisClient.del(`auth_${decodeURIComponent(token2)}`)
     })
 
-    it('should not log user in, alt 3', async () => {
+    it('should log user in, alt 2', async () => {
       let res = await chai.request(app).post('/login').send({
         email: process.env.TESTS_MAIL,
         password: 'test123'
@@ -137,15 +135,13 @@ describe('Authentication Tests', () => {
           password: 'test123'
         })
 
-      expect(res).to.have.status(401)
+      expect(res).to.have.status(200)
       expect(res.body).to.be.an('object')
-      expect(res.body).to.have.property(
-        'error',
-        'You are already authorized'
-      )
-      expect(res.body).to.not.have.property('token')
+      expect(res.body).to.have.property('token')
+      const token2 = res.body.token
 
       await redisClient.del(`auth_${decodeURIComponent(token)}`)
+      await redisClient.del(`auth_${decodeURIComponent(token2)}`)
     })
 
     it('should return no email error', async () => {
@@ -158,6 +154,21 @@ describe('Authentication Tests', () => {
       expect(res.body).to.have.property(
         'error',
         'Please enter your email'
+      )
+      expect(res.body).to.not.have.property('token')
+    })
+
+    it('should return empty email error', async () => {
+      const res = await chai.request(app).post('/login').send({
+        email: '',
+        password: 'test123'
+      })
+
+      expect(res).to.have.status(400)
+      expect(res.body).to.be.an('object')
+      expect(res.body).to.have.property(
+        'error',
+        'Please enter a valid email'
       )
       expect(res.body).to.not.have.property('token')
     })
@@ -511,6 +522,45 @@ describe('Authentication Tests', () => {
       await db<User>('users')
         .where({ email: 'lowadmin@gmail.com' })
         .del()
+    })
+
+    it('should revoke user\'s session, alt', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+
+      expect(res).to.have.status(200)
+      expect(res.body).to.be.an('object')
+      expect(res.body).to.have.property(
+        'message',
+        'Welcome Victor Ilodiuba'
+      )
+      expect(res.body).to.have.property('token')
+      const userToken = res.body.token
+      const userId = res.body.id
+
+      res = await chai.request(app).post('/login').send({
+        email: process.env.ADMIN_EMAIL,
+        password: process.env.ADMIN_PASSWORD
+      })
+
+      expect(res).to.have.status(200)
+      expect(res.body).to.be.an('object')
+      expect(res.body).to.have.property('token')
+      const adminToken = res.body.token
+
+      res = await chai.request(app).delete(`/session/${userId}?token=${adminToken}`)
+
+      expect(res).to.have.status(200)
+      expect(res.body).to.be.an('object')
+      expect(res.body).to.have.property(
+        'message',
+        'Victor Ilodiuba\'s session revoked'
+      )
+
+      await redisClient.del(`auth_${decodeURIComponent(userToken)}`)
+      await redisClient.del(`auth_${decodeURIComponent(adminToken)}`)
     })
 
     it('should say unauthorized, alt', async () => {
