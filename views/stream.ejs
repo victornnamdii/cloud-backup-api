@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ilodiuba Victor's RiseVest File Stream</title>
+  </head>
+  <body>
+    <% if (file.mimetype.startsWith('video')) { %>
+      <video id="videoPlayer" width="650" controls muted="muted" autoplay>
+        <source src="/files/download/<%= file.id %>?token=<%= token %>" type=<%= file.mimetype %> />
+      </video>
+      <% } else { %>
+        <audio controls src="/files/download/<%= file.id %>?token=<%= token %>"></audio>
+      <% } %>
+  </body>
+</html>

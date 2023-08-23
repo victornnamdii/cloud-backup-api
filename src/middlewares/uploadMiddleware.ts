@@ -91,4 +91,4 @@ const uploadToS3 = (req: Request, res: Response, next: NextFunction): void => {
   }
 }
 
-export { uploadToS3, deleteObject }
+export { uploadToS3, deleteObject, s3client }

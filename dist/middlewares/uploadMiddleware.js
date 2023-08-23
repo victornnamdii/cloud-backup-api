@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteObject = exports.uploadToS3 = void 0;
+exports.s3client = exports.deleteObject = exports.uploadToS3 = void 0;
 const multer_1 = __importDefault(require("multer"));
 const multer_s3_1 = __importDefault(require("multer-s3"));
 const client_s3_1 = require("@aws-sdk/client-s3");
@@ -28,6 +28,7 @@ const s3client = new client_s3_1.S3Client({
     },
     region
 });
+exports.s3client = s3client;
 const deleteObject = (file) => __awaiter(void 0, void 0, void 0, function* () {
     const deleteCommand = new client_s3_1.DeleteObjectCommand({
         Bucket: s3Bucket,

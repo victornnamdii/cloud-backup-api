@@ -80,6 +80,7 @@ const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
                     .onUpdate('CASCADE')
                     .onDelete('CASCADE');
                 table.boolean('safe').defaultTo(true);
+                table.string('mimetype').nullable();
                 table.timestamps(false, true);
             });
             yield db_1.default.schema.alterTable('files', (table) => {

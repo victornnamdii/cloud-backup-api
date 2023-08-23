@@ -6,6 +6,7 @@ import validateNewFileBody from '../utils/validators/newFile'
 import { deleteObject } from '../middlewares/uploadMiddleware'
 import validateFileReviewBody from '../utils/validators/fileReview'
 import validateNewFolderBody from '../utils/validators/newFolder'
+import { createReadStream, NoSuchKey } from '../utils/s3'
 
 interface File {
   id: string
@@ -16,6 +17,7 @@ interface File {
   s3_key: string
   user_id: string
   updated_at: Date
+  mimetype: string
 }
 
 interface Folder {
@@ -30,6 +32,8 @@ type FinalResponse = (undefined | Response<any, Record<string, any>>)
 /* eslint-disable-next-line @typescript-eslint/no-extraneous-class */
 class FileController {
   static async addFile (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> {
+    let name: string
+    let displayName: string | undefined
     try {
       validateNewFileBody(req.body)
       /* eslint-disable-next-line @typescript-eslint/strict-boolean-expressions */
@@ -38,10 +42,13 @@ class FileController {
       }
 
       const folderId: string | null = res.locals.folderId
-      /* eslint-disable-next-line @typescript-eslint/strict-boolean-expressions */
-      const name = req.body.name?.toLowerCase() || req.file.originalname.toLowerCase()
-      /* eslint-disable-next-line @typescript-eslint/strict-boolean-expressions */
-      const displayName = req.body.name || req.file.originalname
+      if (req.body.name !== undefined) {
+        name = req.body.name.toLowerCase()
+        displayName = req.body.name
+      } else {
+        name = req.file.originalname.toLowerCase()
+        displayName = req.file.originalname
+      }
       const Files = db<File>('files')
       const file = await Files.where({
         name,
@@ -52,20 +59,21 @@ class FileController {
         if (req.file !== undefined) {
           await deleteObject(req.file)
         }
-        return res.status(400).json({ error: `${req.body.name} already exists` })
+        return res.status(400).json({ error: `${displayName} already exists` })
       }
 
-      await Files.insert({
+      const newFile = await Files.insert({
         displayName,
         name,
         folder_id: res.locals.folderId,
         link: req.file.location,
         s3_key: req.file.key,
-        user_id: req.user?.id
-      })
+        user_id: req.user?.id,
+        mimetype: req.file.mimetype
+      }, ['id'])
       return res.status(201).json({
         message: 'File succesfully uploaded',
-        link: req.file.location
+        id: newFile[0].id
       })
     } catch (error) {
       if (req.file !== undefined) {
@@ -82,7 +90,7 @@ class FileController {
       /* eslint-disable @typescript-eslint/strict-boolean-expressions */
       // @ts-expect-error: Unreachable code error
       if (error?.message?.includes('unique')) {
-        return res.status(400).json({ error: `${req.body.name} already exists` })
+        return res.status(400).json({ error: `${displayName} already exists` })
       }
       next(error)
     }
@@ -158,7 +166,6 @@ class FileController {
         ).select(
           'files.id as file_id',
           'files.displayName as file_name',
-          'link as download_link',
           'folders.displayName as folder_name'
         ).from('files')
           .leftJoin('folders', 'files.folder_id', 'folders.id')
@@ -167,7 +174,6 @@ class FileController {
           .select(
             'files.id as file_id',
             'files.displayName as file_name',
-            'link as download_link',
             'folders.displayName as folder_name'
           ).from('files')
           .leftJoin('folders', 'files.folder_id', 'folders.id')
@@ -206,15 +212,64 @@ class FileController {
         return res.status(400).json({ error: 'Invalid file id' })
       }
       const Files = db<File>('files')
-      const file = await Files.where({
-        user_id: req.user?.id,
-        id: fileId
-      }).first('link')
+      let file: File | undefined
+
+      if (req.user?.is_superuser) {
+        file = await Files.where({
+          id: fileId
+        }).first('id', 's3_key', 'mimetype')
+      } else {
+        file = await Files.where({
+          user_id: req.user?.id,
+          id: fileId
+        }).first('id', 's3_key', 'mimetype')
+      }
+
       if (file === undefined) {
         return res.status(404).json({ error: 'File not found. Please check file id in the URL.' })
       }
-      res.redirect(file.link)
+      const stream = await createReadStream(file.s3_key)
+      stream.pipe(res)
     } catch (error) {
+      if (error instanceof NoSuchKey) {
+        return res.status(404).json({ error: 'File not found in storage' })
+      }
+      next(error)
+    }
+  }
+
+  static async stream (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> {
+    try {
+      const fileId: string = req.params.fileId
+      if (!isUUID(fileId, 4)) {
+        return res.status(400).json({ error: 'Invalid file id' })
+      }
+
+      const Files = db<File>('files')
+      let file: File | undefined
+
+      if (req.user?.is_superuser) {
+        file = await Files.where({
+          id: fileId
+        }).first('id', 's3_key', 'mimetype')
+      } else {
+        file = await Files.where({
+          user_id: req.user?.id,
+          id: fileId
+        }).first('id', 's3_key', 'mimetype')
+      }
+
+      if (file === undefined) {
+        return res.status(404).json({ error: 'File not found. Please check file id in the URL.' })
+      }
+      if (!file.mimetype.startsWith('video') && !file.mimetype.startsWith('audio')) {
+        return res.status(400).json({ error: 'File requested for is neither a video nor audio' })
+      }
+      res.render('stream', { file, token: req.user?.token })
+    } catch (error) {
+      if (error instanceof NoSuchKey) {
+        return res.status(404).json({ error: 'File not found in storage' })
+      }
       next(error)
     }
   }

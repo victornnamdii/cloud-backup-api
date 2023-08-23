@@ -27,6 +27,8 @@ redis_1.redisClient.connect()
 });
 // middlewares
 app.use(express_1.default.json());
+// view engine
+app.set('view engine', 'ejs');
 app.disable('x-powered-by');
 app.get('/', (req, res) => {
     res.send('Welcome to the cloud backup API');

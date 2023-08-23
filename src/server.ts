@@ -26,6 +26,9 @@ redisClient.connect()
 // middlewares
 app.use(express.json())
 
+// view engine
+app.set('view engine', 'ejs')
+
 app.disable('x-powered-by')
 app.get('/', (req: Request, res: Response) => {
   res.send('Welcome to the cloud backup API')

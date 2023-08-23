@@ -37,7 +37,7 @@ class AuthController {
           )
           return res.status(200).json({
             message: `Welcome ${user.first_name} ${user.last_name}`,
-            token
+            token: encodeURIComponent(token)
           })
         }
       }
