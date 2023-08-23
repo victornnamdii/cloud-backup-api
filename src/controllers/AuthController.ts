@@ -87,7 +87,7 @@ class AuthController {
         if (user.token !== null) {
           await redisClient.del(`auth_${user.token}`)
         }
-        return res.status(204).json({
+        return res.status(200).json({
           message: `${user.first_name} ${user.last_name}'s session revoked`
         })
       }

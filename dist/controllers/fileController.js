@@ -337,7 +337,7 @@ class FileController {
                 yield (0, db_1.default)('files')
                     .del()
                     .where('id', '=', fileId);
-                return res.status(204).json({
+                return res.status(200).json({
                     message: `${subquery.displayName} successfully deleted`
                 });
             }
@@ -372,7 +372,7 @@ class FileController {
                 yield (0, db_1.default)('folders')
                     .del()
                     .where('id', '=', subquery.id);
-                return res.status(204).json({
+                return res.status(200).json({
                     message: `${folderName} successfully deleted`
                 });
             }
