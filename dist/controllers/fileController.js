@@ -176,6 +176,29 @@ class FileController {
             }
         });
     }
+    static getFolderFiles(req, res, next) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { folderName } = req.params;
+                const subquery = yield (0, db_1.default)('folders')
+                    .where({
+                    user_id: (_a = req.user) === null || _a === void 0 ? void 0 : _a.id,
+                    name: folderName.toLowerCase()
+                }).first('id');
+                if (subquery === undefined) {
+                    return res.status(404).json({ error: `You do not have a folder named ${folderName}` });
+                }
+                const files = yield (0, db_1.default)('files')
+                    .where('folder_id', '=', subquery.id)
+                    .select('files.id as file_id', 'files.displayName as file_name');
+                return res.status(200).json({ files });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
     static getAllFolders(req, res, next) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
@@ -286,8 +309,11 @@ class FileController {
                         id: fileId
                     }).del();
                     yield (0, uploadMiddleware_1.deleteObject)({ key: file.s3_key });
+                    res.status(201).json({ message: `${file.displayName} marked as unsafe and automatically deleted` });
                 }
-                res.status(201).json({ message: `${file.displayName} marked as unsafe and automatically deleted` });
+                else {
+                    res.status(201).json({ message: `${file.displayName} marked as safe` });
+                }
             }
             catch (error) {
                 if (error instanceof BodyError_1.default) {

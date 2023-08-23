@@ -184,6 +184,29 @@ class FileController {
     }
   }
 
+  static async getFolderFiles (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> {
+    try {
+      const { folderName } = req.params
+      const subquery = await db<Folder>('folders')
+        .where({
+          user_id: req.user?.id,
+          name: folderName.toLowerCase()
+        }).first('id')
+      if (subquery === undefined) {
+        return res.status(404).json({ error: `You do not have a folder named ${folderName}` })
+      }
+      const files = await db<File>('files')
+        .where('folder_id', '=', subquery.id)
+        .select(
+          'files.id as file_id',
+          'files.displayName as file_name'
+        )
+      return res.status(200).json({ files })
+    } catch (error) {
+      next(error)
+    }
+  }
+
   static async getAllFolders (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> {
     try {
       const folders = await db.where(
@@ -296,8 +319,10 @@ class FileController {
           id: fileId
         }).del()
         await deleteObject({ key: file.s3_key })
+        res.status(201).json({ message: `${file.displayName} marked as unsafe and automatically deleted` })
+      } else {
+        res.status(201).json({ message: `${file.displayName} marked as safe` })
       }
-      res.status(201).json({ message: `${file.displayName} marked as unsafe and automatically deleted` })
     } catch (error) {
       if (error instanceof RequestBodyError) {
         return res.status(400).json({ error: error.message })

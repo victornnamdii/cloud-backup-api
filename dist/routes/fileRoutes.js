@@ -11,10 +11,11 @@ const fileRouter = (0, express_1.Router)();
 /* eslint-disable @typescript-eslint/no-misused-promises */
 fileRouter.get('/files', authMiddleware_1.requireAuth, fileController_1.default.getAllFiles);
 fileRouter.get('/files/download/:fileId', authMiddleware_1.requireAuth, fileController_1.default.download);
+fileRouter.get('/files/stream/:fileId', authMiddleware_1.requireAuth, fileController_1.default.stream);
 fileRouter.post('/files', authMiddleware_1.requireFolderQueryAuth, uploadMiddleware_1.uploadToS3, fileController_1.default.addFile);
 fileRouter.patch('/files/:fileId', authMiddleware_1.requireAdminAuth, fileController_1.default.review);
-fileRouter.get('/files/stream/:fileId', authMiddleware_1.requireAuth, fileController_1.default.stream);
 fileRouter.get('/folders', authMiddleware_1.requireAuth, fileController_1.default.getAllFolders);
+fileRouter.get('/folders/:folderName', authMiddleware_1.requireAuth, fileController_1.default.getFolderFiles);
 fileRouter.post('/folders', authMiddleware_1.requireAuth, fileController_1.default.addFolder);
 fileRouter.put('/folders/:folderName', authMiddleware_1.requireFolderAuth, fileController_1.default.moveFile);
 exports.default = fileRouter;

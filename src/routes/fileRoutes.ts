@@ -8,10 +8,11 @@ const fileRouter: Router = Router()
 /* eslint-disable @typescript-eslint/no-misused-promises */
 fileRouter.get('/files', requireAuth, FileController.getAllFiles)
 fileRouter.get('/files/download/:fileId', requireAuth, FileController.download)
+fileRouter.get('/files/stream/:fileId', requireAuth, FileController.stream)
 fileRouter.post('/files', requireFolderQueryAuth, uploadToS3, FileController.addFile)
 fileRouter.patch('/files/:fileId', requireAdminAuth, FileController.review)
-fileRouter.get('/files/stream/:fileId', requireAuth, FileController.stream)
 fileRouter.get('/folders', requireAuth, FileController.getAllFolders)
+fileRouter.get('/folders/:folderName', requireAuth, FileController.getFolderFiles)
 fileRouter.post('/folders', requireAuth, FileController.addFolder)
 fileRouter.put('/folders/:folderName', requireFolderAuth, FileController.moveFile)
 
