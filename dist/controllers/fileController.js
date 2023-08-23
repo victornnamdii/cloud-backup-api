@@ -173,7 +173,7 @@ class FileController {
                 }
                 else {
                     files = yield db_1.default
-                        .select('files.id as file_id', 'files.displayName as file_name', 'folders.displayName as folder_name').from('files')
+                        .select('files.id as file_id', 'files.displayName as file_name', 'folders.displayName as folder_name', 'files.history as file_history').from('files')
                         .leftJoin('folders', 'files.folder_id', 'folders.id');
                 }
                 return res.status(200).json({ files });
