@@ -33,7 +33,7 @@ class FileController {
                 (0, newFile_1.default)(req.body);
                 /* eslint-disable-next-line @typescript-eslint/strict-boolean-expressions */
                 if (!req.file.location) {
-                    return res.status(400).json({ error: 'Please add an image' });
+                    return res.status(400).json({ error: 'Please add a file' });
                 }
                 const folderId = res.locals.folderId;
                 if (req.body.name !== undefined) {
@@ -139,7 +139,7 @@ class FileController {
                     message += `${folderName}`;
                 }
                 else {
-                    message += `root directory`;
+                    message += 'root directory';
                 }
                 const date = new Date();
                 fileHistory.push({ event: message, date });
@@ -454,9 +454,11 @@ class FileController {
         });
     }
     static review(req, res, next) {
+        var _a, _b, _c, _d, _e;
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 (0, fileReview_1.default)(req.body);
+                const date = new Date();
                 const fileId = req.params.fileId;
                 if (!(0, isUUID_1.default)(fileId, 4)) {
                     return res.status(400).json({ error: 'Invalid file id' });
@@ -464,20 +466,63 @@ class FileController {
                 const Files = (0, db_1.default)('files');
                 const file = yield Files.where({
                     id: fileId
-                }).first('s3_key', 'displayName');
+                }).first('s3_key', 'displayName', 'false_review_by', 'history');
                 if (file === undefined) {
                     return res.status(404).json({ error: 'File not found. Please check file id in the URL.' });
                 }
+                const falseAdminReviews = file.false_review_by;
+                const fileHistory = file.history;
                 const safe = req.body.safe;
-                if (!safe) {
+                let message;
+                if (!safe && !falseAdminReviews.includes((_a = req.user) === null || _a === void 0 ? void 0 : _a.id)) {
+                    message = `${file.displayName} marked as unsafe by an Admin`;
+                    fileHistory.push({ event: message, date });
+                    falseAdminReviews.push((_b = req.user) === null || _b === void 0 ? void 0 : _b.id);
+                    yield (0, db_1.default)('files').where({
+                        id: fileId
+                    }).update({
+                        updated_at: date,
+                        history: JSON.stringify(fileHistory),
+                        false_review_by: JSON.stringify(falseAdminReviews)
+                    });
+                }
+                else if (!safe && falseAdminReviews.includes((_c = req.user) === null || _c === void 0 ? void 0 : _c.id)) {
+                    message = `${file.displayName} already marked as unsafe by you`;
+                }
+                else if (safe && falseAdminReviews.includes((_d = req.user) === null || _d === void 0 ? void 0 : _d.id)) {
+                    const index = falseAdminReviews.indexOf((_e = req.user) === null || _e === void 0 ? void 0 : _e.id);
+                    falseAdminReviews.splice(index, 1);
+                    message = `${file.displayName} marked as safe by an Admin that marked as unsafe previously`;
+                    fileHistory.push({ event: message, date });
+                    yield (0, db_1.default)('files').where({
+                        id: fileId
+                    }).update({
+                        updated_at: date,
+                        history: JSON.stringify(fileHistory),
+                        false_review_by: JSON.stringify(falseAdminReviews)
+                    });
+                }
+                else {
+                    message = `${file.displayName} marked as safe by an Admin`;
+                    fileHistory.push({ event: message, date });
+                    yield (0, db_1.default)('files').where({
+                        id: fileId
+                    }).update({
+                        updated_at: date,
+                        history: JSON.stringify(fileHistory)
+                    });
+                }
+                if (falseAdminReviews.length >= 3) {
+                    yield (0, uploadMiddleware_1.deleteObject)({ key: file.s3_key });
                     yield (0, db_1.default)('files').where({
                         id: fileId
                     }).del();
-                    yield (0, uploadMiddleware_1.deleteObject)({ key: file.s3_key });
-                    res.status(201).json({ message: `${file.displayName} marked as unsafe and automatically deleted` });
+                    res.status(201).json({
+                        message: `${file.displayName} marked as unsafe by 3 admins and automatically deleted`
+                    });
                 }
                 else {
-                    res.status(201).json({ message: `${file.displayName} marked as safe` });
+                    res.status(201).json({ message });
                 }
             }
             catch (error) {

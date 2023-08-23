@@ -21,6 +21,7 @@ interface File {
   updated_at: Date
   mimetype: string
   history: string | Array<{ event: string, date: Date }>
+  false_review_by: string | string[]
 }
 
 interface Folder {
@@ -42,7 +43,7 @@ class FileController {
       validateNewFileBody(req.body)
       /* eslint-disable-next-line @typescript-eslint/strict-boolean-expressions */
       if (!req.file.location) {
-        return res.status(400).json({ error: 'Please add an image' })
+        return res.status(400).json({ error: 'Please add a file' })
       }
 
       const folderId: string | null = res.locals.folderId
@@ -143,7 +144,7 @@ class FileController {
       if (folderName !== 'null') {
         message += `${folderName}`
       } else {
-        message += `root directory`
+        message += 'root directory'
       }
 
       const date = new Date()
@@ -464,6 +465,7 @@ class FileController {
   static async review (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> {
     try {
       validateFileReviewBody(req.body)
+      const date = new Date()
       const fileId: string = req.params.fileId
       if (!isUUID(fileId, 4)) {
         return res.status(400).json({ error: 'Invalid file id' })
@@ -472,20 +474,62 @@ class FileController {
       const Files = db<File>('files')
       const file = await Files.where({
         id: fileId
-      }).first('s3_key', 'displayName')
+      }).first('s3_key', 'displayName', 'false_review_by', 'history')
       if (file === undefined) {
         return res.status(404).json({ error: 'File not found. Please check file id in the URL.' })
       }
 
+      const falseAdminReviews = file.false_review_by as string[]
+      const fileHistory = file.history as Array<{ event: string, date: Date }>
       const safe = req.body.safe as boolean
-      if (!safe) {
+
+      let message: string
+      if (!safe && !falseAdminReviews.includes(req.user?.id as string)) {
+        message = `${file.displayName} marked as unsafe by an Admin`
+        fileHistory.push({ event: message, date })
+        falseAdminReviews.push(req.user?.id as string)
+        await db<File>('files').where({
+          id: fileId
+        }).update({
+          updated_at: date,
+          history: JSON.stringify(fileHistory),
+          false_review_by: JSON.stringify(falseAdminReviews)
+        })
+      } else if (!safe && falseAdminReviews.includes(req.user?.id as string)) {
+        message = `${file.displayName} already marked as unsafe by you`
+      } else if (safe && falseAdminReviews.includes(req.user?.id as string)) {
+        const index: number = falseAdminReviews.indexOf(req.user?.id as string)
+        falseAdminReviews.splice(index, 1)
+        message = `${file.displayName} marked as safe by an Admin that marked as unsafe previously`
+        fileHistory.push({ event: message, date })
+        await db<File>('files').where({
+          id: fileId
+        }).update({
+          updated_at: date,
+          history: JSON.stringify(fileHistory),
+          false_review_by: JSON.stringify(falseAdminReviews)
+        })
+      } else {
+        message = `${file.displayName} marked as safe by an Admin`
+        fileHistory.push({ event: message, date })
+        await db<File>('files').where({
+          id: fileId
+        }).update({
+          updated_at: date,
+          history: JSON.stringify(fileHistory)
+        })
+      }
+
+      if (falseAdminReviews.length >= 3) {
+        await deleteObject({ key: file.s3_key })
         await db<File>('files').where({
           id: fileId
         }).del()
-        await deleteObject({ key: file.s3_key })
-        res.status(201).json({ message: `${file.displayName} marked as unsafe and automatically deleted` })
+        res.status(201).json({
+          message: `${file.displayName} marked as unsafe by 3 admins and automatically deleted`
+        })
       } else {
-        res.status(201).json({ message: `${file.displayName} marked as safe` })
+        res.status(201).json({ message })
       }
     } catch (error) {
       if (error instanceof RequestBodyError) {

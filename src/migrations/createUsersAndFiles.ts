@@ -3,6 +3,7 @@ import db from '../config/db'
 
 const createTables = async (): Promise<void> => {
   try {
+    console.log('Connected to DB')
     let exists: boolean = await db.schema.hasTable('users')
     if (!exists) {
       await db.schema.createTable('users', (table) => {
@@ -69,6 +70,7 @@ const createTables = async (): Promise<void> => {
         table.boolean('safe').defaultTo(true)
         table.string('mimetype').nullable()
         table.json('history').notNullable()
+        table.json('false_review_by').notNullable().defaultTo([])
         table.timestamps(false, true)
       })
       await db.schema.alterTable('files', (table) => {
@@ -79,7 +81,6 @@ const createTables = async (): Promise<void> => {
       })
       console.log('Created Files Table')
     }
-    console.log('Connected to DB')
   } catch (error) {
     console.log('Error connecting to DB')
     console.log(error)

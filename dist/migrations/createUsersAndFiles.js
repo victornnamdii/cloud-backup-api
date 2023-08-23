@@ -16,6 +16,7 @@ const hashPassword_1 = __importDefault(require("../utils/hashPassword"));
 const db_1 = __importDefault(require("../config/db"));
 const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        console.log('Connected to DB');
         let exists = yield db_1.default.schema.hasTable('users');
         if (!exists) {
             yield db_1.default.schema.createTable('users', (table) => {
@@ -82,6 +83,7 @@ const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
                 table.boolean('safe').defaultTo(true);
                 table.string('mimetype').nullable();
                 table.json('history').notNullable();
+                table.json('false_review_by').notNullable().defaultTo([]);
                 table.timestamps(false, true);
             });
             yield db_1.default.schema.alterTable('files', (table) => {
@@ -92,7 +94,6 @@ const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
             });
             console.log('Created Files Table');
         }
-        console.log('Connected to DB');
     }
     catch (error) {
         console.log('Error connecting to DB');
