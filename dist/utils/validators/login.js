@@ -17,7 +17,7 @@ const validatelogInBody = (body) => {
         throw new BodyError_1.default('Please enter a valid email');
     }
     if (body.password === undefined || typeof body.password !== 'string') {
-        throw new BodyError_1.default('Please enter your password');
+        throw new BodyError_1.default('Please enter a password');
     }
 };
 exports.default = validatelogInBody;

@@ -58,3 +58,4 @@ app.use((req, res, next) => {
     }
 });
 app.use(errorMiddleware_1.default);
+exports.default = app;

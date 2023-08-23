@@ -46,6 +46,7 @@ class AuthController {
                         );
                         return res.status(200).json({
                             message: `Welcome ${user.first_name} ${user.last_name}`,
+                            id: user.id,
                             token: encodeURIComponent(token)
                         });
                     }
@@ -53,23 +54,22 @@ class AuthController {
                 return res.status(401).json({ error: 'Incorrect email/password' });
             }
             catch (error) {
-                console.log(error);
                 if (error instanceof BodyError_1.default) {
                     return res.status(400).json({ error: error.message });
                 }
+                console.log(error);
                 next(error);
             }
         });
     }
     static logout(req, res, next) {
-        var _a, _b;
+        var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const Authorization = req.header('Authorization');
-                const token = Authorization.split(' ')[1];
+                const token = decodeURIComponent((_a = req.user) === null || _a === void 0 ? void 0 : _a.token);
                 yield redis_1.redisClient.del(`auth_${token}`);
-                const firstName = (_a = req.user) === null || _a === void 0 ? void 0 : _a.first_name;
-                const lastName = (_b = req.user) === null || _b === void 0 ? void 0 : _b.last_name;
+                const firstName = (_b = req.user) === null || _b === void 0 ? void 0 : _b.first_name;
+                const lastName = (_c = req.user) === null || _c === void 0 ? void 0 : _c.last_name;
                 return res.status(200).json({ message: `Goodbye ${firstName} ${lastName}` });
             }
             catch (error) {
@@ -81,8 +81,8 @@ class AuthController {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const userId = req.params.userId;
-                if (!(0, isUUID_1.default)(userId)) {
-                    res.status(400).json({ error: 'Invalid user id' });
+                if (!(0, isUUID_1.default)(userId, 4)) {
+                    return res.status(400).json({ error: 'Invalid user id' });
                 }
                 const user = yield (0, db_1.default)('users').where({ id: userId }).first();
                 if (user !== undefined) {
@@ -93,7 +93,7 @@ class AuthController {
                         message: `${user.first_name} ${user.last_name}'s session revoked`
                     });
                 }
-                return res.status(400).json({ error: 'No user with specified id' });
+                return res.status(404).json({ error: 'No user with specified id' });
             }
             catch (error) {
                 next(error);

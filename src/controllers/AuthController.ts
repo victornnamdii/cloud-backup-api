@@ -49,24 +49,24 @@ class AuthController {
           )
           return res.status(200).json({
             message: `Welcome ${user.first_name} ${user.last_name}`,
+            id: user.id,
             token: encodeURIComponent(token)
           })
         }
       }
       return res.status(401).json({ error: 'Incorrect email/password' })
     } catch (error) {
-      console.log(error)
       if (error instanceof RequestBodyError) {
         return res.status(400).json({ error: error.message })
       }
+      console.log(error)
       next(error)
     }
   }
 
   static async logout (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> {
     try {
-      const Authorization = req.header('Authorization') as string
-      const token = Authorization.split(' ')[1]
+      const token = decodeURIComponent(req.user?.token as string)
       await redisClient.del(`auth_${token}`)
       const firstName = req.user?.first_name
       const lastName = req.user?.last_name
@@ -79,8 +79,8 @@ class AuthController {
   static async revokeSession (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> {
     try {
       const userId = req.params.userId
-      if (!isUUID(userId)) {
-        res.status(400).json({ error: 'Invalid user id' })
+      if (!isUUID(userId, 4)) {
+        return res.status(400).json({ error: 'Invalid user id' })
       }
       const user = await db<User>('users').where({ id: userId }).first()
       if (user !== undefined) {
@@ -91,7 +91,7 @@ class AuthController {
           message: `${user.first_name} ${user.last_name}'s session revoked`
         })
       }
-      return res.status(400).json({ error: 'No user with specified id' })
+      return res.status(404).json({ error: 'No user with specified id' })
     } catch (error) {
       next(error)
     }

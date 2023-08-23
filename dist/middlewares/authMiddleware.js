@@ -19,7 +19,7 @@ const BodyError_1 = __importDefault(require("../utils/BodyError"));
 const requireNoAuth = (req, res, next) => {
     try {
         if (req.user !== undefined) {
-            return res.status(401).json({ error: 'A user is already logged' });
+            return res.status(401).json({ error: 'You are already authorized' });
         }
         next();
     }

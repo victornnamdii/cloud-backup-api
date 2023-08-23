@@ -20,7 +20,7 @@ const validatelogInBody = (body: loginParams): void => {
   }
 
   if (body.password === undefined || typeof body.password !== 'string') {
-    throw new RequestBodyError('Please enter your password')
+    throw new RequestBodyError('Please enter a password')
   }
 }
 

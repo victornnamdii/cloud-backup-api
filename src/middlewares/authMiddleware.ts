@@ -25,7 +25,7 @@ interface Folder {
 const requireNoAuth = (req: Request, res: Response, next: NextFunction): FinalResponse => {
   try {
     if (req.user !== undefined) {
-      return res.status(401).json({ error: 'A user is already logged' })
+      return res.status(401).json({ error: 'You are already authorized' })
     }
     next()
   } catch (error) {
