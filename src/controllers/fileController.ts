@@ -139,11 +139,11 @@ class FileController {
     const { folderName } = req.params
     try {
       const { folderId, fileId, fileHistory, source } = res.locals
-      let message: string = `${fileName} moved from`
+      let message: string = `${fileName} moved from ${source} to `
       if (folderName !== 'null') {
-        message += ` ${source} to ${folderName}`
+        message += `${folderName}`
       } else {
-        message += ` ${source} to root directory`
+        message += `root directory`
       }
 
       const date = new Date()
