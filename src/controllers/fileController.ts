@@ -7,6 +7,8 @@ import { deleteObject } from '../middlewares/uploadMiddleware'
 import validateFileReviewBody from '../utils/validators/fileReview'
 import validateNewFolderBody from '../utils/validators/newFolder'
 import { createReadStream, NoSuchKey } from '../utils/s3'
+import validateUpdateFolderBody from '../utils/validators/updateFolder'
+import validateUpdateFileBody from '../utils/validators/updateFile'
 
 interface File {
   id: string
@@ -25,6 +27,7 @@ interface Folder {
   name: string
   displayName: string
   user_id: string
+  updated_at: Date
 }
 
 type FinalResponse = (undefined | Response<any, Record<string, any>>)
@@ -65,7 +68,7 @@ class FileController {
       const newFile = await Files.insert({
         displayName,
         name,
-        folder_id: res.locals.folderId,
+        folder_id: folderId ?? null,
         link: req.file.location,
         s3_key: req.file.key,
         user_id: req.user?.id,
@@ -73,7 +76,8 @@ class FileController {
       }, ['id'])
       return res.status(201).json({
         message: 'File succesfully uploaded',
-        id: newFile[0].id
+        id: newFile[0].id,
+        folderId: folderId ?? null
       })
     } catch (error) {
       if (req.file !== undefined) {
@@ -207,6 +211,13 @@ class FileController {
     }
   }
 
+  static async localGetFolderFiles (folderId: string): Promise<{ s3_key: string }[]> {
+    const files = await db<File>('files')
+      .where('folder_id', '=', folderId)
+      .select('s3_key')
+    return files
+  }
+
   static async getAllFolders (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> {
     try {
       const folders = await db.where(
@@ -223,6 +234,147 @@ class FileController {
         folder.file_count = Number(folder.file_count)
       })
       return res.status(200).json({ folders })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  static async updateFolder (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> {
+    try {
+      validateUpdateFolderBody(req.body)
+      const { folderName } = req.params
+      const updates = { updated_at: new Date() }
+      if (req.body.name !== undefined) {
+        // @ts-expect-error: Unreachable code error
+        updates.name = req.body.name.toLowerCase()
+        // @ts-expect-error: Unreachable code error
+        updates.displayName = req.body.name
+      }
+      if (Object.keys(updates).length > 1) {
+        const subquery = await db<Folder>('folders')
+          .where({
+            user_id: req.user?.id,
+            name: folderName.toLowerCase()
+          }).first('id')
+        if (subquery === undefined) {
+          return res.status(404).json({ error: `You do not have a folder named ${folderName}` })
+        }
+        await db<Folder>('folders')
+          .update(updates)
+          .where('id', '=', subquery.id)
+        return res.status(201).json({
+          // @ts-expect-error: Unreachable code error
+          message: `${folderName} folder successfully updated to ${updates.displayName}`
+        })
+      }
+      return res.status(400).json({ error: 'No field specified to update' })
+    } catch (error) {
+      if (error instanceof RequestBodyError) {
+        return res.status(400).json({ error: error.message })
+      }
+      next(error)
+    }
+  }
+
+  static async updateFile (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> {
+    try {
+      validateUpdateFileBody(req.body)
+      const fileId: string = req.params.fileId
+      if (!isUUID(fileId, 4)) {
+        return res.status(400).json({ error: 'Invalid file id' })
+      }
+      const updates = { updated_at: new Date() }
+      if (req.body.name !== undefined) {
+        // @ts-expect-error: Unreachable code error
+        updates.name = req.body.name.toLowerCase()
+        // @ts-expect-error: Unreachable code error
+        updates.displayName = req.body.name
+      }
+      if (Object.keys(updates).length > 1) {
+        const subquery = await db<File>('files')
+          .where({
+            user_id: req.user?.id,
+            id: fileId
+          }).first('id')
+        if (subquery === undefined) {
+          return res.status(404).json({ error: `You do not have a file with id ${fileId}` })
+        }
+        await db<File>('files')
+          .update(updates)
+          .where('id', '=', fileId)
+        return res.status(201).json({
+          // @ts-expect-error: Unreachable code error
+          message: `${updates.displayName} successfully updated`
+        })
+      }
+      return res.status(400).json({ error: 'No field specified to update' })
+    } catch (error) {
+      if (error instanceof RequestBodyError) {
+        return res.status(400).json({ error: error.message })
+      }
+      next(error)
+    }
+  }
+
+  static async deleteFile (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> {
+    try {
+      const fileId: string = req.params.fileId
+      if (!isUUID(fileId, 4)) {
+        return res.status(400).json({ error: 'Invalid file id' })
+      }
+      const subquery = await db<File>('files')
+        .where({
+          user_id: req.user?.id,
+          id: fileId
+        }).first('id', 'displayName', 's3_key')
+      if (subquery === undefined) {
+        return res.status(404).json({ error: `You do not have a file with id ${fileId}` })
+      }
+      await deleteObject({ key: subquery.s3_key })
+
+      await db<File>('files')
+        .del()
+        .where('id', '=', fileId)
+
+      return res.status(201).json({
+        message: `${subquery.displayName} successfully deleted`
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  static async deleteFolder (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> {
+    try {
+      const { folderName } = req.params
+      const subquery = await db<Folder>('folders')
+        .where({
+          user_id: req.user?.id,
+          name: folderName.toLowerCase()
+        }).first('id')
+      if (subquery === undefined) {
+        return res.status(404).json({ error: `You do not have a folder named ${folderName}` })
+      }
+
+      const folderFiles = await FileController.localGetFolderFiles(subquery.id)
+      folderFiles.forEach((file) => {
+        deleteObject({ key: file.s3_key })
+          .then(() => {
+            console.log(`Deleted ${file.s3_key}`)
+          })
+          .catch(() => {
+            console.log(`Didn't delete ${file.s3_key}`)
+          })
+      })
+
+      await db<Folder>('folders')
+        .del()
+        .where('id', '=', subquery.id)
+
+
+      return res.status(201).json({
+        message: `${folderName} successfully deleted`
+      })
     } catch (error) {
       next(error)
     }

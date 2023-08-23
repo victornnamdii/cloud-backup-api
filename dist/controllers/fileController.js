@@ -20,6 +20,8 @@ const uploadMiddleware_1 = require("../middlewares/uploadMiddleware");
 const fileReview_1 = __importDefault(require("../utils/validators/fileReview"));
 const newFolder_1 = __importDefault(require("../utils/validators/newFolder"));
 const s3_1 = require("../utils/s3");
+const updateFolder_1 = __importDefault(require("../utils/validators/updateFolder"));
+const updateFile_1 = __importDefault(require("../utils/validators/updateFile"));
 /* eslint-disable-next-line @typescript-eslint/no-extraneous-class */
 class FileController {
     static addFile(req, res, next) {
@@ -57,7 +59,7 @@ class FileController {
                 const newFile = yield Files.insert({
                     displayName,
                     name,
-                    folder_id: res.locals.folderId,
+                    folder_id: folderId !== null && folderId !== void 0 ? folderId : null,
                     link: req.file.location,
                     s3_key: req.file.key,
                     user_id: (_b = req.user) === null || _b === void 0 ? void 0 : _b.id,
@@ -65,7 +67,8 @@ class FileController {
                 }, ['id']);
                 return res.status(201).json({
                     message: 'File succesfully uploaded',
-                    id: newFile[0].id
+                    id: newFile[0].id,
+                    folderId: folderId !== null && folderId !== void 0 ? folderId : null
                 });
             }
             catch (error) {
@@ -199,6 +202,14 @@ class FileController {
             }
         });
     }
+    static localGetFolderFiles(folderId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const files = yield (0, db_1.default)('files')
+                .where('folder_id', '=', folderId)
+                .select('s3_key');
+            return files;
+        });
+    }
     static getAllFolders(req, res, next) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
@@ -210,6 +221,153 @@ class FileController {
                     folder.file_count = Number(folder.file_count);
                 });
                 return res.status(200).json({ folders });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
+    static updateFolder(req, res, next) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                (0, updateFolder_1.default)(req.body);
+                const { folderName } = req.params;
+                const updates = { updated_at: new Date() };
+                if (req.body.name !== undefined) {
+                    // @ts-expect-error: Unreachable code error
+                    updates.name = req.body.name.toLowerCase();
+                    // @ts-expect-error: Unreachable code error
+                    updates.displayName = req.body.name;
+                }
+                if (Object.keys(updates).length > 1) {
+                    const subquery = yield (0, db_1.default)('folders')
+                        .where({
+                        user_id: (_a = req.user) === null || _a === void 0 ? void 0 : _a.id,
+                        name: folderName.toLowerCase()
+                    }).first('id');
+                    if (subquery === undefined) {
+                        return res.status(404).json({ error: `You do not have a folder named ${folderName}` });
+                    }
+                    yield (0, db_1.default)('folders')
+                        .update(updates)
+                        .where('id', '=', subquery.id);
+                    return res.status(201).json({
+                        // @ts-expect-error: Unreachable code error
+                        message: `${folderName} folder successfully updated to ${updates.displayName}`
+                    });
+                }
+                return res.status(400).json({ error: 'No field specified to update' });
+            }
+            catch (error) {
+                if (error instanceof BodyError_1.default) {
+                    return res.status(400).json({ error: error.message });
+                }
+                next(error);
+            }
+        });
+    }
+    static updateFile(req, res, next) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                (0, updateFile_1.default)(req.body);
+                const fileId = req.params.fileId;
+                if (!(0, isUUID_1.default)(fileId, 4)) {
+                    return res.status(400).json({ error: 'Invalid file id' });
+                }
+                const updates = { updated_at: new Date() };
+                if (req.body.name !== undefined) {
+                    // @ts-expect-error: Unreachable code error
+                    updates.name = req.body.name.toLowerCase();
+                    // @ts-expect-error: Unreachable code error
+                    updates.displayName = req.body.name;
+                }
+                if (Object.keys(updates).length > 1) {
+                    const subquery = yield (0, db_1.default)('files')
+                        .where({
+                        user_id: (_a = req.user) === null || _a === void 0 ? void 0 : _a.id,
+                        id: fileId
+                    }).first('id');
+                    if (subquery === undefined) {
+                        return res.status(404).json({ error: `You do not have a file with id ${fileId}` });
+                    }
+                    yield (0, db_1.default)('files')
+                        .update(updates)
+                        .where('id', '=', fileId);
+                    return res.status(201).json({
+                        // @ts-expect-error: Unreachable code error
+                        message: `${updates.displayName} successfully updated`
+                    });
+                }
+                return res.status(400).json({ error: 'No field specified to update' });
+            }
+            catch (error) {
+                if (error instanceof BodyError_1.default) {
+                    return res.status(400).json({ error: error.message });
+                }
+                next(error);
+            }
+        });
+    }
+    static deleteFile(req, res, next) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const fileId = req.params.fileId;
+                if (!(0, isUUID_1.default)(fileId, 4)) {
+                    return res.status(400).json({ error: 'Invalid file id' });
+                }
+                const subquery = yield (0, db_1.default)('files')
+                    .where({
+                    user_id: (_a = req.user) === null || _a === void 0 ? void 0 : _a.id,
+                    id: fileId
+                }).first('id', 'displayName', 's3_key');
+                if (subquery === undefined) {
+                    return res.status(404).json({ error: `You do not have a file with id ${fileId}` });
+                }
+                yield (0, uploadMiddleware_1.deleteObject)({ key: subquery.s3_key });
+                yield (0, db_1.default)('files')
+                    .del()
+                    .where('id', '=', fileId);
+                return res.status(201).json({
+                    message: `${subquery.displayName} successfully deleted`
+                });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
+    static deleteFolder(req, res, next) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { folderName } = req.params;
+                const subquery = yield (0, db_1.default)('folders')
+                    .where({
+                    user_id: (_a = req.user) === null || _a === void 0 ? void 0 : _a.id,
+                    name: folderName.toLowerCase()
+                }).first('id');
+                if (subquery === undefined) {
+                    return res.status(404).json({ error: `You do not have a folder named ${folderName}` });
+                }
+                const folderFiles = yield FileController.localGetFolderFiles(subquery.id);
+                folderFiles.forEach((file) => {
+                    (0, uploadMiddleware_1.deleteObject)({ key: file.s3_key })
+                        .then(() => {
+                        console.log(`Deleted ${file.s3_key}`);
+                    })
+                        .catch(() => {
+                        console.log(`Didn't delete ${file.s3_key}`);
+                    });
+                });
+                yield (0, db_1.default)('folders')
+                    .del()
+                    .where('id', '=', subquery.id);
+                return res.status(201).json({
+                    message: `${folderName} successfully deleted`
+                });
             }
             catch (error) {
                 next(error);

@@ -3,9 +3,6 @@ import RequestBodyError from '../BodyError'
 interface Folder {
   id: string
   name: string | undefined
-  folder_id: string
-  link: string
-  s3_key: string
   user_id: string
 }
 

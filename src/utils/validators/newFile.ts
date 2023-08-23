@@ -13,9 +13,6 @@ const validateNewFileBody = (body: File): void => {
   if (body.name !== undefined && typeof body.name !== 'string') {
     throw new RequestBodyError('Name should be a string or undefined')
   }
-  if (body.name === 'null') {
-    throw new RequestBodyError('Name cannot be "null"')
-  }
 }
 
 export default validateNewFileBody
