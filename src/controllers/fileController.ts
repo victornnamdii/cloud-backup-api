@@ -350,7 +350,7 @@ class FileController {
         .del()
         .where('id', '=', fileId)
 
-      return res.status(201).json({
+      return res.status(204).json({
         message: `${subquery.displayName} successfully deleted`
       })
     } catch (error) {
@@ -385,7 +385,7 @@ class FileController {
         .del()
         .where('id', '=', subquery.id)
 
-      return res.status(201).json({
+      return res.status(204).json({
         message: `${folderName} successfully deleted`
       })
     } catch (error) {

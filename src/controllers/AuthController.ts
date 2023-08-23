@@ -1,5 +1,6 @@
 import { type Request, type Response, type NextFunction } from 'express'
 import bcrypt from 'bcrypt'
+import isUUID from 'validator/lib/isUUID'
 import validateLogInBody from '../utils/validators/login'
 import RequestBodyError from '../utils/BodyError'
 import db from '../config/db'
@@ -12,6 +13,8 @@ interface User {
   password: string
   first_name: string
   last_name: string
+  updated_at: Date
+  token: string
 }
 
 type FinalResponse = (undefined | Response<any, Record<string, any>>)
@@ -30,6 +33,15 @@ class AuthController {
         auth = await bcrypt.compare(password, user.password)
         if (auth) {
           const token = generateKey()
+          await db<User>('users').where({
+            email
+          }).update({
+            updated_at: new Date(),
+            token
+          })
+          if (user.token !== null) {
+            await redisClient.del(`auth_${user.token}`)
+          }
           await redisClient.set(
             `auth_${token}`,
             JSON.stringify(user),
@@ -59,6 +71,27 @@ class AuthController {
       const firstName = req.user?.first_name
       const lastName = req.user?.last_name
       return res.status(200).json({ message: `Goodbye ${firstName} ${lastName}` })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  static async revokeSession (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> {
+    try {
+      const userId = req.params.userId
+      if (!isUUID(userId)) {
+        res.status(400).json({ error: 'Invalid user id' })
+      }
+      const user = await db<User>('users').where({ id: userId }).first()
+      if (user !== undefined) {
+        if (user.token !== null) {
+          await redisClient.del(`auth_${user.token}`)
+        }
+        return res.status(204).json({
+          message: `${user.first_name} ${user.last_name}'s session revoked`
+        })
+      }
+      return res.status(400).json({ error: 'No user with specified id' })
     } catch (error) {
       next(error)
     }

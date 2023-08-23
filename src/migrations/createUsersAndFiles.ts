@@ -4,6 +4,7 @@ import db from '../config/db'
 const createTables = async (): Promise<void> => {
   try {
     console.log('Connected to DB')
+
     let exists: boolean = await db.schema.hasTable('users')
     if (!exists) {
       await db.schema.createTable('users', (table) => {
@@ -12,7 +13,9 @@ const createTables = async (): Promise<void> => {
         table.string('password').notNullable()
         table.string('first_name').notNullable()
         table.string('last_name').notNullable()
+        table.string('token').nullable().defaultTo(null)
         table.boolean('is_superuser').defaultTo(false)
+        table.boolean('is_superadmin').defaultTo(false)
         table.timestamps(false, true)
       })
       console.log('Created Users Table')
@@ -21,10 +24,12 @@ const createTables = async (): Promise<void> => {
         password: await hashPassword(process.env.ADMIN_PASSWORD as string),
         first_name: process.env.ADMIN_FIRST_NAME,
         last_name: process.env.ADMIN_LAST_NAME,
-        is_superuser: true
+        is_superuser: true,
+        is_superadmin: true
       })
       console.log('Created Admin Account')
     }
+
     exists = await db.schema.hasTable('folders')
     if (!exists) {
       await db.schema.createTable('folders', (table) => {
@@ -47,6 +52,7 @@ const createTables = async (): Promise<void> => {
       })
       console.log('Created Folders Table')
     }
+
     exists = await db.schema.hasTable('files')
     if (!exists) {
       await db.schema.createTable('files', (table) => {

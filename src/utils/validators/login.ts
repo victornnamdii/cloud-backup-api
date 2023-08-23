@@ -6,9 +6,15 @@ interface loginParams {
 }
 
 const validatelogInBody = (body: loginParams): void => {
-  if (body.email === undefined) {
+  if (body.email === undefined ||
+    body.email === null ||
+    typeof body.email !== 'string'
+  ) {
     throw new RequestBodyError('Please enter your email')
   }
+
+  const email = body.email
+  body.email = email.toLowerCase().trim()
   if (!isEmail(body.email)) {
     throw new RequestBodyError('Please enter a valid email')
   }

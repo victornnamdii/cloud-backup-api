@@ -25,7 +25,9 @@ const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
                 table.string('password').notNullable();
                 table.string('first_name').notNullable();
                 table.string('last_name').notNullable();
+                table.string('token').nullable().defaultTo(null);
                 table.boolean('is_superuser').defaultTo(false);
+                table.boolean('is_superadmin').defaultTo(false);
                 table.timestamps(false, true);
             });
             console.log('Created Users Table');
@@ -34,7 +36,8 @@ const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
                 password: yield (0, hashPassword_1.default)(process.env.ADMIN_PASSWORD),
                 first_name: process.env.ADMIN_FIRST_NAME,
                 last_name: process.env.ADMIN_LAST_NAME,
-                is_superuser: true
+                is_superuser: true,
+                is_superadmin: true
             });
             console.log('Created Admin Account');
         }

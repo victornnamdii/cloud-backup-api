@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const bcrypt_1 = __importDefault(require("bcrypt"));
+const isUUID_1 = __importDefault(require("validator/lib/isUUID"));
 const login_1 = __importDefault(require("../utils/validators/login"));
 const BodyError_1 = __importDefault(require("../utils/BodyError"));
 const db_1 = __importDefault(require("../config/db"));
@@ -32,6 +33,15 @@ class AuthController {
                     auth = yield bcrypt_1.default.compare(password, user.password);
                     if (auth) {
                         const token = (0, generateToken_1.default)();
+                        yield (0, db_1.default)('users').where({
+                            email
+                        }).update({
+                            updated_at: new Date(),
+                            token
+                        });
+                        if (user.token !== null) {
+                            yield redis_1.redisClient.del(`auth_${user.token}`);
+                        }
                         yield redis_1.redisClient.set(`auth_${token}`, JSON.stringify(user), 1 * 24 * 60 * 60 // One day
                         );
                         return res.status(200).json({
@@ -61,6 +71,29 @@ class AuthController {
                 const firstName = (_a = req.user) === null || _a === void 0 ? void 0 : _a.first_name;
                 const lastName = (_b = req.user) === null || _b === void 0 ? void 0 : _b.last_name;
                 return res.status(200).json({ message: `Goodbye ${firstName} ${lastName}` });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
+    static revokeSession(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const userId = req.params.userId;
+                if (!(0, isUUID_1.default)(userId)) {
+                    res.status(400).json({ error: 'Invalid user id' });
+                }
+                const user = yield (0, db_1.default)('users').where({ id: userId }).first();
+                if (user !== undefined) {
+                    if (user.token !== null) {
+                        yield redis_1.redisClient.del(`auth_${user.token}`);
+                    }
+                    return res.status(204).json({
+                        message: `${user.first_name} ${user.last_name}'s session revoked`
+                    });
+                }
+                return res.status(400).json({ error: 'No user with specified id' });
             }
             catch (error) {
                 next(error);

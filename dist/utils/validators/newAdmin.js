@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const isEmail_1 = __importDefault(require("validator/lib/isEmail"));
 const BodyError_1 = __importDefault(require("../BodyError"));
-const validatelogInBody = (body) => {
+const validateNewAdminBody = (body) => {
     if (body.email === undefined ||
         body.email === null ||
         typeof body.email !== 'string') {
@@ -16,8 +16,11 @@ const validatelogInBody = (body) => {
     if (!(0, isEmail_1.default)(body.email)) {
         throw new BodyError_1.default('Please enter a valid email');
     }
-    if (body.password === undefined || typeof body.password !== 'string') {
-        throw new BodyError_1.default('Please enter your password');
+    if (body.firstName === undefined || typeof body.firstName !== 'string') {
+        throw new BodyError_1.default('Please enter a first name');
+    }
+    if (body.lastName === undefined || typeof body.lastName !== 'string') {
+        throw new BodyError_1.default('Please enter a last name');
     }
 };
-exports.default = validatelogInBody;
+exports.default = validateNewAdminBody;

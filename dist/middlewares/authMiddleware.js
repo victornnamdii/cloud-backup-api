@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.requireFolderQueryAuth = exports.requireFolderAuth = exports.requireAdminAuth = exports.requireAuth = exports.requireNoAuth = void 0;
+exports.requireFolderQueryAuth = exports.requireFolderAuth = exports.requireSuperAdminAuth = exports.requireAdminAuth = exports.requireAuth = exports.requireNoAuth = void 0;
 const db_1 = __importDefault(require("../config/db"));
 const movefile_1 = __importDefault(require("../utils/validators/movefile"));
 const BodyError_1 = __importDefault(require("../utils/BodyError"));
@@ -54,6 +54,20 @@ const requireAdminAuth = (req, res, next) => {
     }
 };
 exports.requireAdminAuth = requireAdminAuth;
+const requireSuperAdminAuth = (req, res, next) => {
+    var _a;
+    try {
+        if (((_a = req.user) === null || _a === void 0 ? void 0 : _a.is_superadmin) === true) {
+            next();
+            return;
+        }
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.requireSuperAdminAuth = requireSuperAdminAuth;
 const requireFolderAuth = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     try {
