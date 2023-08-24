@@ -9,6 +9,7 @@ import db from '../config/db'
 import app from '../server'
 import { redisClient } from '../config/redis'
 import hashPassword from '../utils/hashPassword'
+import { deleteObject } from '../middlewares/uploadMiddleware'
 
 dotenv.config()
 chai.use(chaiHttp)
@@ -915,6 +916,10 @@ describe('File and Folder Tests', () => {
       )
       expect(res.body).to.have.property('id')
       expect(res.body).to.have.property('folderId', null)
+      const file = await db<File>('files')
+        .where({ id: res.body.id })
+        .first('s3_key')
+      await deleteObject({ key: file?.s3_key as string })
       await redisClient.del(`auth_${decodeURIComponent(token)}`)
     })
 
@@ -937,6 +942,10 @@ describe('File and Folder Tests', () => {
       )
       expect(res.body).to.have.property('id')
       expect(res.body).to.have.property('folderId', null)
+      const file = await db<File>('files')
+        .where({ id: res.body.id })
+        .first('s3_key')
+      await deleteObject({ key: file?.s3_key as string })
       await redisClient.del(`auth_${decodeURIComponent(token)}`)
     })
 
@@ -959,6 +968,10 @@ describe('File and Folder Tests', () => {
       )
       expect(res.body).to.have.property('id')
       expect(res.body).to.have.property('folderId', null)
+      const file = await db<File>('files')
+        .where({ id: res.body.id })
+        .first('s3_key')
+      await deleteObject({ key: file?.s3_key as string })
       await redisClient.del(`auth_${decodeURIComponent(token)}`)
     })
 
@@ -983,6 +996,10 @@ describe('File and Folder Tests', () => {
       expect(res.body).to.have.property('id')
       expect(res.body).to.have.property('folderId')
       expect(res.body.folderId !== null).to.equal(true)
+      const file = await db<File>('files')
+        .where({ id: res.body.id })
+        .first('s3_key')
+      await deleteObject({ key: file?.s3_key as string })
       await redisClient.del(`auth_${decodeURIComponent(token)}`)
     })
 
@@ -1007,6 +1024,10 @@ describe('File and Folder Tests', () => {
       expect(res.body).to.have.property('id')
       expect(res.body).to.have.property('folderId')
       expect(res.body.folderId !== null).to.equal(true)
+      const file = await db<File>('files')
+        .where({ id: res.body.id })
+        .first('s3_key')
+      await deleteObject({ key: file?.s3_key as string })
       await redisClient.del(`auth_${decodeURIComponent(token)}`)
     })
 
@@ -1030,6 +1051,10 @@ describe('File and Folder Tests', () => {
       expect(res.body).to.have.property('id')
       expect(res.body).to.have.property('folderId')
       expect(res.body.folderId !== null).to.equal(true)
+      const file = await db<File>('files')
+        .where({ id: res.body.id })
+        .first('s3_key')
+      await deleteObject({ key: file?.s3_key as string })
       await redisClient.del(`auth_${decodeURIComponent(token)}`)
     })
 

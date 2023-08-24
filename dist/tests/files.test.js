@@ -46,6 +46,7 @@ const db_1 = __importDefault(require("../config/db"));
 const server_1 = __importDefault(require("../server"));
 const redis_1 = require("../config/redis");
 const hashPassword_1 = __importDefault(require("../utils/hashPassword"));
+const uploadMiddleware_1 = require("../middlewares/uploadMiddleware");
 dotenv_1.default.config();
 chai_1.default.use(chai_http_1.default);
 const binaryParser = function (res, cb) {
@@ -707,6 +708,10 @@ const binaryParser = function (res, cb) {
             (0, chai_1.expect)(res.body).to.have.property('message', 'File succesfully uploaded');
             (0, chai_1.expect)(res.body).to.have.property('id');
             (0, chai_1.expect)(res.body).to.have.property('folderId', null);
+            const file = yield (0, db_1.default)('files')
+                .where({ id: res.body.id })
+                .first('s3_key');
+            yield (0, uploadMiddleware_1.deleteObject)({ key: file === null || file === void 0 ? void 0 : file.s3_key });
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
         (0, mocha_1.it)('should create a new file with token query', () => __awaiter(void 0, void 0, void 0, function* () {
@@ -723,6 +728,10 @@ const binaryParser = function (res, cb) {
             (0, chai_1.expect)(res.body).to.have.property('message', 'File succesfully uploaded');
             (0, chai_1.expect)(res.body).to.have.property('id');
             (0, chai_1.expect)(res.body).to.have.property('folderId', null);
+            const file = yield (0, db_1.default)('files')
+                .where({ id: res.body.id })
+                .first('s3_key');
+            yield (0, uploadMiddleware_1.deleteObject)({ key: file === null || file === void 0 ? void 0 : file.s3_key });
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
         (0, mocha_1.it)('should create a new file without name field', () => __awaiter(void 0, void 0, void 0, function* () {
@@ -739,6 +748,10 @@ const binaryParser = function (res, cb) {
             (0, chai_1.expect)(res.body).to.have.property('message', 'File succesfully uploaded');
             (0, chai_1.expect)(res.body).to.have.property('id');
             (0, chai_1.expect)(res.body).to.have.property('folderId', null);
+            const file = yield (0, db_1.default)('files')
+                .where({ id: res.body.id })
+                .first('s3_key');
+            yield (0, uploadMiddleware_1.deleteObject)({ key: file === null || file === void 0 ? void 0 : file.s3_key });
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
         (0, mocha_1.it)('should create a new file with new folder name in query', () => __awaiter(void 0, void 0, void 0, function* () {
@@ -757,6 +770,10 @@ const binaryParser = function (res, cb) {
             (0, chai_1.expect)(res.body).to.have.property('id');
             (0, chai_1.expect)(res.body).to.have.property('folderId');
             (0, chai_1.expect)(res.body.folderId !== null).to.equal(true);
+            const file = yield (0, db_1.default)('files')
+                .where({ id: res.body.id })
+                .first('s3_key');
+            yield (0, uploadMiddleware_1.deleteObject)({ key: file === null || file === void 0 ? void 0 : file.s3_key });
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
         (0, mocha_1.it)('should create a new file with already existing folder name in query', () => __awaiter(void 0, void 0, void 0, function* () {
@@ -775,6 +792,10 @@ const binaryParser = function (res, cb) {
             (0, chai_1.expect)(res.body).to.have.property('id');
             (0, chai_1.expect)(res.body).to.have.property('folderId');
             (0, chai_1.expect)(res.body.folderId !== null).to.equal(true);
+            const file = yield (0, db_1.default)('files')
+                .where({ id: res.body.id })
+                .first('s3_key');
+            yield (0, uploadMiddleware_1.deleteObject)({ key: file === null || file === void 0 ? void 0 : file.s3_key });
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
         (0, mocha_1.it)('should create a new file with already existing folder name and token in query', () => __awaiter(void 0, void 0, void 0, function* () {
@@ -792,6 +813,10 @@ const binaryParser = function (res, cb) {
             (0, chai_1.expect)(res.body).to.have.property('id');
             (0, chai_1.expect)(res.body).to.have.property('folderId');
             (0, chai_1.expect)(res.body.folderId !== null).to.equal(true);
+            const file = yield (0, db_1.default)('files')
+                .where({ id: res.body.id })
+                .first('s3_key');
+            yield (0, uploadMiddleware_1.deleteObject)({ key: file === null || file === void 0 ? void 0 : file.s3_key });
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
         (0, mocha_1.it)('should say file aready exists', () => __awaiter(void 0, void 0, void 0, function* () {
