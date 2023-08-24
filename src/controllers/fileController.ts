@@ -176,6 +176,7 @@ class FileController {
         ).select(
           'files.id as file_id',
           'files.displayName as file_name',
+          'files.mimetype as file_type',
           'folders.displayName as folder_name',
           'files.history as file_history'
         ).from('files')
@@ -186,6 +187,7 @@ class FileController {
             'files.id as file_id',
             'files.user_id as file_user_id',
             'files.displayName as file_name',
+            'files.mimetype as file_type',
             'folders.displayName as folder_name',
             'files.history as file_history'
           ).from('files')

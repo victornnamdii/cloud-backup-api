@@ -3,6 +3,7 @@ import { before, after, describe, it } from 'mocha'
 import dotenv from 'dotenv'
 import chaiHttp from 'chai-http'
 import { v4 } from 'uuid'
+import { parse } from 'node-html-parser'
 import db from '../config/db'
 import app from '../server'
 import { redisClient } from '../config/redis'
@@ -83,7 +84,7 @@ describe('File Tests', () => {
         link: 'https://risevest.com',
         s3_key: 'risevest_cloud_1441553a-9218-42c5-8ad2-794c7bf6dd10_t-rex-roar.mp3',
         user_id: id,
-        mimetype: 'image/jpeg',
+        mimetype: 'audio/mpeg',
         history: JSON.stringify([{ event: 'Created', date: new Date() }])
       })
 
@@ -95,7 +96,7 @@ describe('File Tests', () => {
         link: 'https://risevest.com',
         s3_key: 'risevest_cloud_1441553a-9218-42c5-8ad2-794c7bf6dd10_t-rex-roar.mp3',
         user_id: id,
-        mimetype: 'image/jpeg',
+        mimetype: 'audio/mpeg',
         history: JSON.stringify([{ event: 'Created', date: new Date() }])
       })
 
@@ -611,6 +612,283 @@ describe('File Tests', () => {
       const jsonString = res.body.toString()
       const json = JSON.parse(jsonString)
       expect(json).to.have.property('error', 'File not found in storage')
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+  })
+
+  describe('GET /files/stream/:fileId', () => {
+    it('should stream file', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      //   console.log(files)
+      res = await chai.request(app)
+        .get(`/files/stream/${files[0].file_id}`)
+        .set('Authorization', `Bearer ${token}`)
+
+      expect(res).to.have.status(200)
+      const page = parse(res.text)
+      const stream = page.querySelector('audio')
+      expect(stream?.rawAttrs).to.exist
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should stream file, alt', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      //   console.log(files)
+      res = await chai.request(app)
+        .get(`/files/stream/${files[0].file_id}?token=${token}`)
+
+      expect(res).to.have.status(200)
+      const page = parse(res.text)
+      const stream = page.querySelector('audio')
+      expect(stream?.rawAttrs).to.exist
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should stream file for admin', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      res = await chai.request(app).post('/login').send({
+        email: process.env.ADMIN_EMAIL,
+        password: process.env.ADMIN_PASSWORD
+      })
+      expect(res).to.have.status(200)
+      const adminToken = res.body.token
+
+      //   console.log(files)
+      res = await chai.request(app)
+        .get(`/files/stream/${files[0].file_id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+
+      expect(res).to.have.status(200)
+      const page = parse(res.text)
+      const stream = page.querySelector('audio')
+      expect(stream?.rawAttrs).to.exist
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+      await redisClient.del(`auth_${decodeURIComponent(adminToken)}`)
+    })
+
+    it('should stream file for admin, alt', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      res = await chai.request(app).post('/login').send({
+        email: process.env.ADMIN_EMAIL,
+        password: process.env.ADMIN_PASSWORD
+      })
+      expect(res).to.have.status(200)
+      const adminToken = res.body.token
+
+      //   console.log(files)
+      res = await chai.request(app)
+        .get(`/files/stream/${files[0].file_id}?token=${adminToken}`)
+
+      expect(res).to.have.status(200)
+      const page = parse(res.text)
+      const stream = page.querySelector('audio')
+      expect(stream?.rawAttrs).to.exist
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+      await redisClient.del(`auth_${decodeURIComponent(adminToken)}`)
+    })
+
+    it('should say invalid id', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files/stream/invalidid')
+        .set('Authorization', `Bearer ${token}`)
+
+      expect(res).to.have.status(400)
+      expect(res.body).to.have.property('error', 'Invalid file id')
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say unauthorized', async () => {
+      const uuid = v4()
+      const res = await chai.request(app)
+        .get(`/files/stream/${uuid}`)
+      expect(res).to.have.status(401)
+      expect(res.body).to.have.property(
+        'error',
+        'Unauthorized'
+      )
+    })
+
+    it('should say unauthorized, alt', async () => {
+      const res = await chai.request(app)
+        .get('/files/stream/fileid')
+        .set('Authorization', 'Bearer wrongtoken')
+      expect(res).to.have.status(401)
+      expect(res.body).to.have.property(
+        'error',
+        'Unauthorized'
+      )
+    })
+
+    it('should say unauthorized, alt 2', async () => {
+      const res = await chai.request(app)
+        .get('/files/stream/file?token=wrongtoken')
+      expect(res).to.have.status(401)
+      expect(res.body).to.have.property(
+        'error',
+        'Unauthorized'
+      )
+    })
+
+    it('should say file not found', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      const ids: string[] = []
+
+      files.forEach((file) => {
+        ids.push(file.file_id)
+      })
+
+      const wronguuid = (): string | undefined => {
+        const uuid = v4()
+        if (ids.includes(uuid)) {
+          wronguuid()
+        } else {
+          return uuid
+        }
+      }
+
+      //   console.log(files)
+      res = await chai.request(app)
+        .get(`/files/stream/${wronguuid()}`)
+        .set('Authorization', `Bearer ${token}`)
+
+      expect(res).to.have.status(404)
+      expect(res.body).to.have.property('error', 'File not found. Please check file id in the URL.')
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say return file type error', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.WRONG_TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      //   console.log(files)
+      res = await chai.request(app)
+        .get(`/files/stream/${files[0].file_id}`)
+        .set('Authorization', `Bearer ${token}`)
+
+      expect(res).to.have.status(400)
+      expect(res.body).to.have.property(
+        'error',
+        'File requested for is neither a video nor audio'
+      )
       await redisClient.del(`auth_${decodeURIComponent(token)}`)
     })
   })

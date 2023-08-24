@@ -40,6 +40,7 @@ const mocha_1 = require("mocha");
 const dotenv_1 = __importDefault(require("dotenv"));
 const chai_http_1 = __importDefault(require("chai-http"));
 const uuid_1 = require("uuid");
+const node_html_parser_1 = require("node-html-parser");
 const db_1 = __importDefault(require("../config/db"));
 const server_1 = __importDefault(require("../server"));
 const redis_1 = require("../config/redis");
@@ -82,7 +83,7 @@ const binaryParser = function (res, cb) {
             link: 'https://risevest.com',
             s3_key: 'risevest_cloud_1441553a-9218-42c5-8ad2-794c7bf6dd10_t-rex-roar.mp3',
             user_id: id,
-            mimetype: 'image/jpeg',
+            mimetype: 'audio/mpeg',
             history: JSON.stringify([{ event: 'Created', date: new Date() }])
         });
         yield (0, db_1.default)('files')
@@ -93,7 +94,7 @@ const binaryParser = function (res, cb) {
             link: 'https://risevest.com',
             s3_key: 'risevest_cloud_1441553a-9218-42c5-8ad2-794c7bf6dd10_t-rex-roar.mp3',
             user_id: id,
-            mimetype: 'image/jpeg',
+            mimetype: 'audio/mpeg',
             history: JSON.stringify([{ event: 'Created', date: new Date() }])
         });
         const user2 = yield (0, db_1.default)('users')
@@ -485,6 +486,207 @@ const binaryParser = function (res, cb) {
             const jsonString = res.body.toString();
             const json = JSON.parse(jsonString);
             (0, chai_1.expect)(json).to.have.property('error', 'File not found in storage');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+    });
+    (0, mocha_1.describe)('GET /files/stream/:fileId', () => {
+        (0, mocha_1.it)('should stream file', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/files')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            /* eslint-disable @typescript-eslint/no-unused-expressions */
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            //   console.log(files)
+            res = yield chai_1.default.request(server_1.default)
+                .get(`/files/stream/${files[0].file_id}`)
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            const page = (0, node_html_parser_1.parse)(res.text);
+            const stream = page.querySelector('audio');
+            (0, chai_1.expect)(stream === null || stream === void 0 ? void 0 : stream.rawAttrs).to.exist;
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should stream file, alt', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/files')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            /* eslint-disable @typescript-eslint/no-unused-expressions */
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            //   console.log(files)
+            res = yield chai_1.default.request(server_1.default)
+                .get(`/files/stream/${files[0].file_id}?token=${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            const page = (0, node_html_parser_1.parse)(res.text);
+            const stream = page.querySelector('audio');
+            (0, chai_1.expect)(stream === null || stream === void 0 ? void 0 : stream.rawAttrs).to.exist;
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should stream file for admin', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/files')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            /* eslint-disable @typescript-eslint/no-unused-expressions */
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.ADMIN_EMAIL,
+                password: process.env.ADMIN_PASSWORD
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const adminToken = res.body.token;
+            //   console.log(files)
+            res = yield chai_1.default.request(server_1.default)
+                .get(`/files/stream/${files[0].file_id}`)
+                .set('Authorization', `Bearer ${adminToken}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            const page = (0, node_html_parser_1.parse)(res.text);
+            const stream = page.querySelector('audio');
+            (0, chai_1.expect)(stream === null || stream === void 0 ? void 0 : stream.rawAttrs).to.exist;
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
+        }));
+        (0, mocha_1.it)('should stream file for admin, alt', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/files')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            /* eslint-disable @typescript-eslint/no-unused-expressions */
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.ADMIN_EMAIL,
+                password: process.env.ADMIN_PASSWORD
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const adminToken = res.body.token;
+            //   console.log(files)
+            res = yield chai_1.default.request(server_1.default)
+                .get(`/files/stream/${files[0].file_id}?token=${adminToken}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            const page = (0, node_html_parser_1.parse)(res.text);
+            const stream = page.querySelector('audio');
+            (0, chai_1.expect)(stream === null || stream === void 0 ? void 0 : stream.rawAttrs).to.exist;
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
+        }));
+        (0, mocha_1.it)('should say invalid id', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/files/stream/invalidid')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(400);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Invalid file id');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should say unauthorized', () => __awaiter(void 0, void 0, void 0, function* () {
+            const uuid = (0, uuid_1.v4)();
+            const res = yield chai_1.default.request(server_1.default)
+                .get(`/files/stream/${uuid}`);
+            (0, chai_1.expect)(res).to.have.status(401);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Unauthorized');
+        }));
+        (0, mocha_1.it)('should say unauthorized, alt', () => __awaiter(void 0, void 0, void 0, function* () {
+            const res = yield chai_1.default.request(server_1.default)
+                .get('/files/stream/fileid')
+                .set('Authorization', 'Bearer wrongtoken');
+            (0, chai_1.expect)(res).to.have.status(401);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Unauthorized');
+        }));
+        (0, mocha_1.it)('should say unauthorized, alt 2', () => __awaiter(void 0, void 0, void 0, function* () {
+            const res = yield chai_1.default.request(server_1.default)
+                .get('/files/stream/file?token=wrongtoken');
+            (0, chai_1.expect)(res).to.have.status(401);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Unauthorized');
+        }));
+        (0, mocha_1.it)('should say file not found', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/files')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            /* eslint-disable @typescript-eslint/no-unused-expressions */
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            const ids = [];
+            files.forEach((file) => {
+                ids.push(file.file_id);
+            });
+            const wronguuid = () => {
+                const uuid = (0, uuid_1.v4)();
+                if (ids.includes(uuid)) {
+                    wronguuid();
+                }
+                else {
+                    return uuid;
+                }
+            };
+            //   console.log(files)
+            res = yield chai_1.default.request(server_1.default)
+                .get(`/files/stream/${wronguuid()}`)
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(404);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'File not found. Please check file id in the URL.');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should say return file type error', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.WRONG_TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/files')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            /* eslint-disable @typescript-eslint/no-unused-expressions */
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            //   console.log(files)
+            res = yield chai_1.default.request(server_1.default)
+                .get(`/files/stream/${files[0].file_id}`)
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(400);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'File requested for is neither a video nor audio');
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
     });

@@ -168,12 +168,12 @@ class FileController {
             try {
                 let files;
                 if (!((_a = req.user) === null || _a === void 0 ? void 0 : _a.is_superuser)) {
-                    files = yield db_1.default.where('files.user_id', (_b = req.user) === null || _b === void 0 ? void 0 : _b.id).select('files.id as file_id', 'files.displayName as file_name', 'folders.displayName as folder_name', 'files.history as file_history').from('files')
+                    files = yield db_1.default.where('files.user_id', (_b = req.user) === null || _b === void 0 ? void 0 : _b.id).select('files.id as file_id', 'files.displayName as file_name', 'files.mimetype as file_type', 'folders.displayName as folder_name', 'files.history as file_history').from('files')
                         .leftJoin('folders', 'files.folder_id', 'folders.id');
                 }
                 else {
                     files = yield db_1.default
-                        .select('files.id as file_id', 'files.user_id as file_user_id', 'files.displayName as file_name', 'folders.displayName as folder_name', 'files.history as file_history').from('files')
+                        .select('files.id as file_id', 'files.user_id as file_user_id', 'files.displayName as file_name', 'files.mimetype as file_type', 'folders.displayName as folder_name', 'files.history as file_history').from('files')
                         .leftJoin('folders', 'files.folder_id', 'folders.id');
                 }
                 return res.status(200).json({ files });
