@@ -1800,5 +1800,12 @@ const binaryParser = function (res, cb) {
             (0, chai_1.expect)(res).to.have.status(400);
             (0, chai_1.expect)(res.body).to.have.property('error', 'Please enter a Folder name');
         }));
+        (0, mocha_1.it)('should say unauthorized', () => __awaiter(void 0, void 0, void 0, function* () {
+            const res = yield chai_1.default.request(server_1.default).post('/folders').send({
+                name: 'tratra'
+            });
+            (0, chai_1.expect)(res).to.have.status(401);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Unauthorized');
+        }));
     });
 });

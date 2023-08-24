@@ -2426,5 +2426,17 @@ describe('File and Folder Tests', () => {
         'Please enter a Folder name'
       )
     })
+
+    it('should say unauthorized', async () => {
+      const res = await chai.request(app).post('/folders').send({
+        name: 'tratra'
+      })
+
+      expect(res).to.have.status(401)
+      expect(res.body).to.have.property(
+        'error',
+        'Unauthorized'
+      )
+    })
   })
 })
