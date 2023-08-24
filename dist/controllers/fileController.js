@@ -296,7 +296,9 @@ class FileController {
                         id: fileId
                     }).first('id', 'displayName', 'history');
                     if (subquery === undefined) {
-                        return res.status(404).json({ error: `You do not have a file with id ${fileId}` });
+                        return res.status(404).json({
+                            error: 'File not found. Please check file id in the URL.'
+                        });
                     }
                     // @ts-expect-error: Unreachable code error
                     const message = `Name changed from ${subquery.displayName} to ${updates.displayName}`;
@@ -308,7 +310,7 @@ class FileController {
                         .where('id', '=', fileId);
                     return res.status(201).json({ message });
                 }
-                return res.status(400).json({ error: 'No field specified to update' });
+                return res.status(400).json({ error: 'No valid field specified to update' });
             }
             catch (error) {
                 if (error instanceof BodyError_1.default) {

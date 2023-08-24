@@ -1108,4 +1108,149 @@ describe('File Tests', () => {
       )
     })
   })
+
+  describe('PATCH /files/file:id', () => {
+    it('should update file name', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      res = await chai.request(app)
+        .patch(`/files/${files[0].file_id}`)
+        .send({ name: 'newname' })
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(201)
+      expect(res.body.message.startsWith('Name changed from')).to.equal(true)
+    })
+
+    it('should not update id', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      res = await chai.request(app)
+        .patch(`/files/${files[0].file_id}`)
+        .send({ id: 'newname' })
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(400)
+      expect(res.body).to.have.property(
+        'error',
+        'No valid field specified to update'
+      )
+    })
+
+    it('should say you do not have file with id error', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      const ids: string[] = []
+
+      files.forEach((file) => {
+        ids.push(file.file_id)
+      })
+
+      const wronguuid = (): string | undefined => {
+        const uuid = v4()
+        if (ids.includes(uuid)) {
+          wronguuid()
+        } else {
+          return uuid
+        }
+      }
+
+      const fileId = wronguuid()
+      res = await chai.request(app)
+        .patch(`/files/${fileId}`)
+        .send({ name: 'newname', user_id: 'newid' })
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(404)
+      expect(res.body).to.have.property(
+        'error',
+        'File not found. Please check file id in the URL.'
+      )
+    })
+
+    it('should say invalid id', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+
+      expect(res).to.have.status(200)
+      const token = res.body.token
+      res = await chai.request(app)
+        .patch('/files/invalidid')
+        .send({ name: 'newname' })
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(400)
+      expect(res.body).to.have.property(
+        'error',
+        'Invalid file id'
+      )
+    })
+
+    it('should say unauthorized', async () => {
+      const uuid = v4()
+      const res = await chai.request(app)
+        .patch(`/files/${uuid}`)
+        .send({ name: 'newname' })
+      expect(res).to.have.status(401)
+      expect(res.body).to.have.property(
+        'error',
+        'Unauthorized'
+      )
+    })
+  })
 })

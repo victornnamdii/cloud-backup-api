@@ -847,4 +847,105 @@ const binaryParser = function (res, cb) {
             (0, chai_1.expect)(res.body).to.have.property('error', 'Unauthorized');
         }));
     });
+    (0, mocha_1.describe)('PATCH /files/file:id', () => {
+        (0, mocha_1.it)('should update file name', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/files')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            /* eslint-disable @typescript-eslint/no-unused-expressions */
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            res = yield chai_1.default.request(server_1.default)
+                .patch(`/files/${files[0].file_id}`)
+                .send({ name: 'newname' })
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body.message.startsWith('Name changed from')).to.equal(true);
+        }));
+        (0, mocha_1.it)('should not update id', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/files')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            /* eslint-disable @typescript-eslint/no-unused-expressions */
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            res = yield chai_1.default.request(server_1.default)
+                .patch(`/files/${files[0].file_id}`)
+                .send({ id: 'newname' })
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(400);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'No valid field specified to update');
+        }));
+        (0, mocha_1.it)('should say you do not have file with id error', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/files')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            /* eslint-disable @typescript-eslint/no-unused-expressions */
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            const ids = [];
+            files.forEach((file) => {
+                ids.push(file.file_id);
+            });
+            const wronguuid = () => {
+                const uuid = (0, uuid_1.v4)();
+                if (ids.includes(uuid)) {
+                    wronguuid();
+                }
+                else {
+                    return uuid;
+                }
+            };
+            const fileId = wronguuid();
+            res = yield chai_1.default.request(server_1.default)
+                .patch(`/files/${fileId}`)
+                .send({ name: 'newname', user_id: 'newid' })
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(404);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'File not found. Please check file id in the URL.');
+        }));
+        (0, mocha_1.it)('should say invalid id', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .patch('/files/invalidid')
+                .send({ name: 'newname' })
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(400);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Invalid file id');
+        }));
+        (0, mocha_1.it)('should say unauthorized', () => __awaiter(void 0, void 0, void 0, function* () {
+            const uuid = (0, uuid_1.v4)();
+            const res = yield chai_1.default.request(server_1.default)
+                .patch(`/files/${uuid}`)
+                .send({ name: 'newname' });
+            (0, chai_1.expect)(res).to.have.status(401);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Unauthorized');
+        }));
+    });
 });
