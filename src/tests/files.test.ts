@@ -2,6 +2,7 @@ import chai, { expect } from 'chai'
 import { before, after, describe, it } from 'mocha'
 import dotenv from 'dotenv'
 import chaiHttp from 'chai-http'
+import fs from 'fs'
 import { v4 } from 'uuid'
 import { parse } from 'node-html-parser'
 import db from '../config/db'
@@ -890,6 +891,221 @@ describe('File Tests', () => {
         'File requested for is neither a video nor audio'
       )
       await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+  })
+
+  describe('POST /files', () => {
+    it('should create a new file', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app).post('/files')
+        .field('name', 'testfilesss')
+        .attach('file', 'testfiles/t-rex-roar.mp3')
+        .set('Authorization', `Bearer ${token}`)
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message',
+        'File succesfully uploaded'
+      )
+      expect(res.body).to.have.property('id')
+      expect(res.body).to.have.property('folderId', null)
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should create a new file with token query', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app).post(`/files?token=${token}`)
+        .field('name', 'testfiles2')
+        .attach('file', 'testfiles/t-rex-roar.mp3')
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message',
+        'File succesfully uploaded'
+      )
+      expect(res.body).to.have.property('id')
+      expect(res.body).to.have.property('folderId', null)
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should create a new file without name field', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app).post('/files')
+        .attach('file', 'testfiles/t-rex-roar.mp3')
+        .set('Authorization', `Bearer ${token}`)
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message',
+        'File succesfully uploaded'
+      )
+      expect(res.body).to.have.property('id')
+      expect(res.body).to.have.property('folderId', null)
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should create a new file with new folder name in query', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app).post('/files?folderName=newfolder')
+        .field('name', 'testfilesss')
+        .attach('file', 'testfiles/t-rex-roar.mp3')
+        .set('Authorization', `Bearer ${token}`)
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message',
+        'File succesfully uploaded'
+      )
+      expect(res.body).to.have.property('id')
+      expect(res.body).to.have.property('folderId')
+      expect(res.body.folderId !== null).to.equal(true)
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should create a new file with already existing folder name in query', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app).post('/files?folderName=testfolder')
+        .field('name', 'testfilesss')
+        .attach('file', 'testfiles/t-rex-roar.mp3')
+        .set('Authorization', `Bearer ${token}`)
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message',
+        'File succesfully uploaded'
+      )
+      expect(res.body).to.have.property('id')
+      expect(res.body).to.have.property('folderId')
+      expect(res.body.folderId !== null).to.equal(true)
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should create a new file with already existing folder name and token in query', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app).post(`/files?folderName=testfolder&token=${token}`)
+        .field('name', 'testfilesss2')
+        .attach('file', 'testfiles/t-rex-roar.mp3')
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message',
+        'File succesfully uploaded'
+      )
+      expect(res.body).to.have.property('id')
+      expect(res.body).to.have.property('folderId')
+      expect(res.body.folderId !== null).to.equal(true)
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say file aready exists', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app).post('/files')
+        .field('name', 'testfilesss')
+        .attach('file', 'testfiles/t-rex-roar.mp3')
+        .set('Authorization', `Bearer ${token}`)
+
+      expect(res).to.have.status(400)
+      expect(res.body).to.have.property(
+        'error',
+        'testfilesss already exists'
+      )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say file aready exists without name field', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app).post('/files')
+        //   .field('name', 'testfilesss')
+        .attach('file', 'testfiles/t-rex-roar.mp3')
+        .set('Authorization', `Bearer ${token}`)
+
+      expect(res).to.have.status(400)
+      expect(res.body).to.have.property(
+        'error',
+        't-rex-roar.mp3 already exists'
+      )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    if (fs.existsSync('testfiles/largefile')) {
+      it('should say file too large', async () => {
+        let res = await chai.request(app).post('/login').send({
+          email: process.env.TESTS_MAIL,
+          password: 'test123'
+        })
+        expect(res).to.have.status(200)
+        const token = res.body.token
+
+        res = await chai.request(app).post('/files')
+          .attach('file', 'testfiles/largefile')
+          .set('Authorization', `Bearer ${token}`)
+
+        expect(res).to.have.status(400)
+        expect(res.body).to.have.property(
+          'error',
+          'File too large'
+        )
+        await redisClient.del(`auth_${decodeURIComponent(token)}`)
+      })
+    }
+
+    it('should say unauthorized', async () => {
+      const res = await chai.request(app).post('/files')
+        .attach('file', 'testfiles/t-rex-roar.mp3')
+
+      expect(res).to.have.status(401)
+      expect(res.body).to.have.property(
+        'error',
+        'Unauthorized'
+      )
     })
   })
 })

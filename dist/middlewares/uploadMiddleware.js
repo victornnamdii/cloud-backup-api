@@ -17,6 +17,7 @@ const multer_1 = __importDefault(require("multer"));
 const multer_s3_1 = __importDefault(require("multer-s3"));
 const client_s3_1 = require("@aws-sdk/client-s3");
 const uuid_1 = require("uuid");
+const BodyError_1 = __importDefault(require("../utils/BodyError"));
 const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
 const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
 const region = process.env.S3_REGION;
@@ -48,14 +49,20 @@ const s3Storage = (0, multer_s3_1.default)({
         cb(null, fileName);
     }
 });
-const checkFile = (file, cb) => {
+const checkFile = (req, file, cb) => {
     //
-    cb(null, true);
+    const max = 200 * 1024 * 1024;
+    if (Number(req.headers['content-length']) > max || file.size > max) {
+        cb(new BodyError_1.default('File too large'));
+    }
+    else {
+        cb(null, true);
+    }
 };
 const multerAgent = (0, multer_1.default)({
     storage: s3Storage,
     fileFilter: (req, file, callback) => {
-        checkFile(file, callback);
+        checkFile(req, file, callback);
     },
     limits: {
         fileSize: 200 * 1024 * 1024 // 200 MB
@@ -74,7 +81,8 @@ const uploadToS3 = (req, res, next) => {
                         console.log('Bad Request');
                     });
                 }
-                if (err instanceof multer_1.default.MulterError) {
+                if (err instanceof multer_1.default.MulterError ||
+                    err instanceof BodyError_1.default) {
                     return res.status(400).json({ error: err.message });
                 }
                 else {

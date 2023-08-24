@@ -10,7 +10,7 @@ interface File {
 }
 
 const validateNewFileBody = (body: File): void => {
-  if (body.name !== undefined && typeof body.name !== 'string') {
+  if (typeof body.name !== 'undefined' && typeof body.name !== 'string') {
     throw new RequestBodyError('Name should be a string or undefined')
   }
 }

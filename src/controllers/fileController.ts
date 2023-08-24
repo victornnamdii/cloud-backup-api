@@ -80,7 +80,8 @@ class FileController {
       return res.status(201).json({
         message: 'File succesfully uploaded',
         id: newFile[0].id,
-        folderId: folderId ?? null
+        folderId: folderId ?? null,
+        file_name: name
       })
     } catch (error) {
       if (req.file !== undefined) {

@@ -39,6 +39,7 @@ const chai_1 = __importStar(require("chai"));
 const mocha_1 = require("mocha");
 const dotenv_1 = __importDefault(require("dotenv"));
 const chai_http_1 = __importDefault(require("chai-http"));
+const fs_1 = __importDefault(require("fs"));
 const uuid_1 = require("uuid");
 const node_html_parser_1 = require("node-html-parser");
 const db_1 = __importDefault(require("../config/db"));
@@ -688,6 +689,162 @@ const binaryParser = function (res, cb) {
             (0, chai_1.expect)(res).to.have.status(400);
             (0, chai_1.expect)(res.body).to.have.property('error', 'File requested for is neither a video nor audio');
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+    });
+    (0, mocha_1.describe)('POST /files', () => {
+        (0, mocha_1.it)('should create a new file', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post('/files')
+                .field('name', 'testfilesss')
+                .attach('file', 'testfiles/t-rex-roar.mp3')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', 'File succesfully uploaded');
+            (0, chai_1.expect)(res.body).to.have.property('id');
+            (0, chai_1.expect)(res.body).to.have.property('folderId', null);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should create a new file with token query', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post(`/files?token=${token}`)
+                .field('name', 'testfiles2')
+                .attach('file', 'testfiles/t-rex-roar.mp3');
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', 'File succesfully uploaded');
+            (0, chai_1.expect)(res.body).to.have.property('id');
+            (0, chai_1.expect)(res.body).to.have.property('folderId', null);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should create a new file without name field', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post('/files')
+                .attach('file', 'testfiles/t-rex-roar.mp3')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', 'File succesfully uploaded');
+            (0, chai_1.expect)(res.body).to.have.property('id');
+            (0, chai_1.expect)(res.body).to.have.property('folderId', null);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should create a new file with new folder name in query', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post('/files?folderName=newfolder')
+                .field('name', 'testfilesss')
+                .attach('file', 'testfiles/t-rex-roar.mp3')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', 'File succesfully uploaded');
+            (0, chai_1.expect)(res.body).to.have.property('id');
+            (0, chai_1.expect)(res.body).to.have.property('folderId');
+            (0, chai_1.expect)(res.body.folderId !== null).to.equal(true);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should create a new file with already existing folder name in query', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post('/files?folderName=testfolder')
+                .field('name', 'testfilesss')
+                .attach('file', 'testfiles/t-rex-roar.mp3')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', 'File succesfully uploaded');
+            (0, chai_1.expect)(res.body).to.have.property('id');
+            (0, chai_1.expect)(res.body).to.have.property('folderId');
+            (0, chai_1.expect)(res.body.folderId !== null).to.equal(true);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should create a new file with already existing folder name and token in query', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post(`/files?folderName=testfolder&token=${token}`)
+                .field('name', 'testfilesss2')
+                .attach('file', 'testfiles/t-rex-roar.mp3');
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', 'File succesfully uploaded');
+            (0, chai_1.expect)(res.body).to.have.property('id');
+            (0, chai_1.expect)(res.body).to.have.property('folderId');
+            (0, chai_1.expect)(res.body.folderId !== null).to.equal(true);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should say file aready exists', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post('/files')
+                .field('name', 'testfilesss')
+                .attach('file', 'testfiles/t-rex-roar.mp3')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(400);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'testfilesss already exists');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should say file aready exists without name field', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post('/files')
+                //   .field('name', 'testfilesss')
+                .attach('file', 'testfiles/t-rex-roar.mp3')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(400);
+            (0, chai_1.expect)(res.body).to.have.property('error', 't-rex-roar.mp3 already exists');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        if (fs_1.default.existsSync('testfiles/largefile')) {
+            (0, mocha_1.it)('should say file too large', () => __awaiter(void 0, void 0, void 0, function* () {
+                let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                    email: process.env.TESTS_MAIL,
+                    password: 'test123'
+                });
+                (0, chai_1.expect)(res).to.have.status(200);
+                const token = res.body.token;
+                res = yield chai_1.default.request(server_1.default).post('/files')
+                    .attach('file', 'testfiles/largefile')
+                    .set('Authorization', `Bearer ${token}`);
+                (0, chai_1.expect)(res).to.have.status(400);
+                (0, chai_1.expect)(res.body).to.have.property('error', 'File too large');
+                yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+            }));
+        }
+        (0, mocha_1.it)('should say unauthorized', () => __awaiter(void 0, void 0, void 0, function* () {
+            const res = yield chai_1.default.request(server_1.default).post('/files')
+                .attach('file', 'testfiles/t-rex-roar.mp3');
+            (0, chai_1.expect)(res).to.have.status(401);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Unauthorized');
         }));
     });
 });

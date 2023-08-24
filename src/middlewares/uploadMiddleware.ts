@@ -3,6 +3,7 @@ import { type Response, type Request, type NextFunction } from 'express'
 import multerS3 from 'multer-s3'
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { v4 } from 'uuid'
+import RequestError from '../utils/BodyError'
 
 const accessKeyId: string = process.env.AWS_ACCESS_KEY_ID as string
 const secretAccessKey: string = process.env.AWS_SECRET_ACCESS_KEY as string
@@ -37,15 +38,20 @@ const s3Storage = multerS3({
   }
 })
 
-const checkFile = (file: Express.MulterS3.File, cb: FileFilterCallback): void => {
+const checkFile = (req: Request, file: Express.MulterS3.File, cb: FileFilterCallback): void => {
   //
-  cb(null, true)
+  const max = 200 * 1024 * 1024
+  if (Number(req.headers['content-length']) > max || file.size > max) {
+    cb(new RequestError('File too large'))
+  } else {
+    cb(null, true)
+  }
 }
 
 const multerAgent = multer({
   storage: s3Storage,
   fileFilter: (req: Request, file: Express.MulterS3.File, callback: FileFilterCallback) => {
-    checkFile(file, callback)
+    checkFile(req, file, callback)
   },
   limits: {
     fileSize: 200 * 1024 * 1024 // 200 MB
@@ -66,7 +72,8 @@ const uploadToS3 = (req: Request, res: Response, next: NextFunction): void => {
               console.log('Bad Request')
             })
         }
-        if (err instanceof multer.MulterError
+        if (err instanceof multer.MulterError ||
+          err instanceof RequestError
         ) {
           return res.status(400).json({ error: err.message })
         } else {
