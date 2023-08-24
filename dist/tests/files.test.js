@@ -78,10 +78,16 @@ const binaryParser = function (res, cb) {
             displayName: 'TestFolder',
             user_id: id
         }, ['id']);
+        const folder2 = yield (0, db_1.default)('folders')
+            .insert({
+            name: 'testfolder2',
+            displayName: 'TestFolder2',
+            user_id: id
+        }, ['id']);
         yield (0, db_1.default)('files')
             .insert({
             name: 'test2',
-            displayName: 'Test',
+            displayName: 'Test2',
             folder_id: null,
             link: 'https://risevest.com',
             s3_key: process.env.VALID_S3_KEY,
@@ -94,6 +100,17 @@ const binaryParser = function (res, cb) {
             name: 'test',
             displayName: 'Test',
             folder_id: folder[0].id,
+            link: 'https://risevest.com',
+            s3_key: process.env.VALID_S3_KEY,
+            user_id: id,
+            mimetype: 'audio/mpeg',
+            history: JSON.stringify([{ event: 'Created', date: new Date() }])
+        });
+        yield (0, db_1.default)('files')
+            .insert({
+            name: 'move',
+            displayName: 'move',
+            folder_id: folder2[0].id,
             link: 'https://risevest.com',
             s3_key: process.env.VALID_S3_KEY,
             user_id: id,
@@ -1826,18 +1843,18 @@ const binaryParser = function (res, cb) {
             (0, chai_1.expect)(res).to.have.status(200);
             const token = res.body.token;
             res = yield chai_1.default.request(server_1.default).put('/folders/testfolder').send({
-                fileName: 'test2',
-                source: 'null'
+                fileName: 'move',
+                source: 'testfolder2'
             }).set('Authorization', `Bearer ${token}`);
             console.log(res.body);
             (0, chai_1.expect)(res).to.have.status(201);
-            (0, chai_1.expect)(res.body).to.have.property('message', 'test2 moved from root directory to testfolder');
-            res = yield chai_1.default.request(server_1.default).put('/folders/null').send({
-                fileName: 'test2',
+            (0, chai_1.expect)(res.body).to.have.property('message', 'move moved from testfolder2 to testfolder');
+            res = yield chai_1.default.request(server_1.default).put('/folders/testfolder2').send({
+                fileName: 'move',
                 source: 'testfolder'
             }).set('Authorization', `Bearer ${token}`);
             (0, chai_1.expect)(res).to.have.status(201);
-            (0, chai_1.expect)(res.body).to.have.property('message', 'test2 moved from testfolder to root directory');
+            (0, chai_1.expect)(res.body).to.have.property('message', 'move moved from testfolder to testfolder2');
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
         (0, mocha_1.it)('should move file to folder, alt', () => __awaiter(void 0, void 0, void 0, function* () {
@@ -1848,18 +1865,18 @@ const binaryParser = function (res, cb) {
             (0, chai_1.expect)(res).to.have.status(200);
             const token = res.body.token;
             res = yield chai_1.default.request(server_1.default).put(`/folders/testfolder?token=${token}`).send({
-                fileName: 'test2',
-                source: 'null'
+                fileName: 'move',
+                source: 'testfolder2'
             });
             console.log(res.body);
             (0, chai_1.expect)(res).to.have.status(201);
-            (0, chai_1.expect)(res.body).to.have.property('message', 'test2 moved from root directory to testfolder');
-            res = yield chai_1.default.request(server_1.default).put(`/folders/null?token=${token}`).send({
-                fileName: 'test2',
+            (0, chai_1.expect)(res.body).to.have.property('message', 'move moved from testfolder2 to testfolder');
+            res = yield chai_1.default.request(server_1.default).put(`/folders/testfolder2?token=${token}`).send({
+                fileName: 'move',
                 source: 'testfolder'
             });
             (0, chai_1.expect)(res).to.have.status(201);
-            (0, chai_1.expect)(res.body).to.have.property('message', 'test2 moved from testfolder to root directory');
+            (0, chai_1.expect)(res.body).to.have.property('message', 'move moved from testfolder to testfolder2');
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
         (0, mocha_1.it)('should say file already exists', () => __awaiter(void 0, void 0, void 0, function* () {
@@ -1869,12 +1886,12 @@ const binaryParser = function (res, cb) {
             });
             (0, chai_1.expect)(res).to.have.status(200);
             const token = res.body.token;
-            res = yield chai_1.default.request(server_1.default).put(`/folders/null?token=${token}`).send({
-                fileName: 'test2',
-                source: 'null'
+            res = yield chai_1.default.request(server_1.default).put(`/folders/testfolder2?token=${token}`).send({
+                fileName: 'move',
+                source: 'testfolder2'
             });
             (0, chai_1.expect)(res).to.have.status(400);
-            (0, chai_1.expect)(res.body).to.have.property('error', 'test2 already exists in root directory');
+            (0, chai_1.expect)(res.body).to.have.property('error', 'move already exists in testfolder2 folder');
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
         (0, mocha_1.it)('should say do not have folder', () => __awaiter(void 0, void 0, void 0, function* () {

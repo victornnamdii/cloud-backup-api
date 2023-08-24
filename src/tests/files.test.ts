@@ -79,10 +79,17 @@ describe('File and Folder Tests', () => {
         user_id: id
       }, ['id']);
 
+    const folder2 = await db<Folder>('folders')
+      .insert({
+        name: 'testfolder2',
+        displayName: 'TestFolder2',
+        user_id: id
+      }, ['id']);
+
     await db<File>('files')
       .insert({
         name: 'test2',
-        displayName: 'Test',
+        displayName: 'Test2',
         folder_id: null,
         link: 'https://risevest.com',
         s3_key: process.env.VALID_S3_KEY,
@@ -96,6 +103,18 @@ describe('File and Folder Tests', () => {
         name: 'test',
         displayName: 'Test',
         folder_id: folder[0].id,
+        link: 'https://risevest.com',
+        s3_key: process.env.VALID_S3_KEY,
+        user_id: id,
+        mimetype: 'audio/mpeg',
+        history: JSON.stringify([{ event: 'Created', date: new Date() }])
+      });
+
+    await db<File>('files')
+      .insert({
+        name: 'move',
+        displayName: 'move',
+        folder_id: folder2[0].id,
         link: 'https://risevest.com',
         s3_key: process.env.VALID_S3_KEY,
         user_id: id,
@@ -2459,26 +2478,26 @@ describe('File and Folder Tests', () => {
       const token = res.body.token;
 
       res = await chai.request(app).put('/folders/testfolder').send({
-        fileName: 'test2',
-        source: 'null'
+        fileName: 'move',
+        source: 'testfolder2'
       }).set('Authorization', `Bearer ${token}`);
       console.log(res.body);
 
       expect(res).to.have.status(201);
       expect(res.body).to.have.property(
         'message',
-        'test2 moved from root directory to testfolder'
+        'move moved from testfolder2 to testfolder'
       );
 
-      res = await chai.request(app).put('/folders/null').send({
-        fileName: 'test2',
+      res = await chai.request(app).put('/folders/testfolder2').send({
+        fileName: 'move',
         source: 'testfolder'
       }).set('Authorization', `Bearer ${token}`);
 
       expect(res).to.have.status(201);
       expect(res.body).to.have.property(
         'message',
-        'test2 moved from testfolder to root directory'
+        'move moved from testfolder to testfolder2'
       );
       await redisClient.del(`auth_${decodeURIComponent(token)}`);
     });
@@ -2492,26 +2511,26 @@ describe('File and Folder Tests', () => {
       const token = res.body.token;
 
       res = await chai.request(app).put(`/folders/testfolder?token=${token}`).send({
-        fileName: 'test2',
-        source: 'null'
+        fileName: 'move',
+        source: 'testfolder2'
       });
       console.log(res.body);
 
       expect(res).to.have.status(201);
       expect(res.body).to.have.property(
         'message',
-        'test2 moved from root directory to testfolder'
+        'move moved from testfolder2 to testfolder'
       );
 
-      res = await chai.request(app).put(`/folders/null?token=${token}`).send({
-        fileName: 'test2',
+      res = await chai.request(app).put(`/folders/testfolder2?token=${token}`).send({
+        fileName: 'move',
         source: 'testfolder'
       });
 
       expect(res).to.have.status(201);
       expect(res.body).to.have.property(
         'message',
-        'test2 moved from testfolder to root directory'
+        'move moved from testfolder to testfolder2'
       );
       await redisClient.del(`auth_${decodeURIComponent(token)}`);
     });
@@ -2524,15 +2543,15 @@ describe('File and Folder Tests', () => {
       expect(res).to.have.status(200);
       const token = res.body.token;
 
-      res = await chai.request(app).put(`/folders/null?token=${token}`).send({
-        fileName: 'test2',
-        source: 'null'
+      res = await chai.request(app).put(`/folders/testfolder2?token=${token}`).send({
+        fileName: 'move',
+        source: 'testfolder2'
       });
 
       expect(res).to.have.status(400);
       expect(res.body).to.have.property(
         'error',
-        'test2 already exists in root directory'
+        'move already exists in testfolder2 folder'
       );
       await redisClient.del(`auth_${decodeURIComponent(token)}`);
     });

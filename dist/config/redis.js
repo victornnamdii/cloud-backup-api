@@ -13,7 +13,13 @@ exports.redisClient = void 0;
 const redis_1 = require("redis");
 class RedisClient {
     constructor() {
-        this.client = (0, redis_1.createClient)();
+        this.client = (0, redis_1.createClient)({
+            password: process.env.REDIS_PASSWORD,
+            socket: {
+                host: process.env.REDIS_HOST,
+                port: Number(process.env.REDIS_PORT)
+            }
+        });
         this.clientConnected = false;
         this.client.on('error', (err) => {
             console.log(err.toString());
