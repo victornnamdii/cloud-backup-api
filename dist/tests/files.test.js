@@ -58,7 +58,7 @@ const binaryParser = function (res, cb) {
         cb(null, Buffer.from(res.data, 'binary'));
     });
 };
-(0, mocha_1.describe)('File Tests', () => {
+(0, mocha_1.describe)('File and Folder Tests', () => {
     let id;
     let id2;
     (0, mocha_1.before)(() => __awaiter(void 0, void 0, void 0, function* () {
@@ -1670,6 +1670,110 @@ const binaryParser = function (res, cb) {
                 .get('/folders/testfolder');
             (0, chai_1.expect)(res).to.have.status(401);
             (0, chai_1.expect)(res.body.error).to.equal('Unauthorized');
+        }));
+    });
+    (0, mocha_1.describe)('POST /folders', () => {
+        (0, mocha_1.it)('should create a new folder', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post('/folders').send({
+                name: 'newboys'
+            }).set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', 'newboys folder succesfully created');
+        }));
+        (0, mocha_1.it)('should create a new folder, alt', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post(`/folders?token=${token}`).send({
+                name: 'newboys2'
+            });
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', 'newboys2 folder succesfully created');
+        }));
+        (0, mocha_1.it)('should say folder already exists', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post(`/folders?token=${token}`).send({
+                name: 'testfolder'
+            });
+            (0, chai_1.expect)(res).to.have.status(400);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'testfolder folder already exists');
+        }));
+        (0, mocha_1.it)('should say name cannot be null', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post(`/folders?token=${token}`).send({
+                name: 'null'
+            });
+            (0, chai_1.expect)(res).to.have.status(400);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Name cannot be "null"');
+        }));
+        (0, mocha_1.it)('should say name error', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post(`/folders?token=${token}`).send({});
+            (0, chai_1.expect)(res).to.have.status(400);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Please enter a Folder name');
+        }));
+        (0, mocha_1.it)('should say name error, alt', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post(`/folders?token=${token}`).send({
+                name: true
+            });
+            (0, chai_1.expect)(res).to.have.status(400);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Please enter a Folder name');
+        }));
+        (0, mocha_1.it)('should say name error, alt 2', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post(`/folders?token=${token}`).send({
+                name: undefined
+            });
+            (0, chai_1.expect)(res).to.have.status(400);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Please enter a Folder name');
+        }));
+        (0, mocha_1.it)('should say name error, alt 3', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post(`/folders?token=${token}`).send({
+                name: null
+            });
+            (0, chai_1.expect)(res).to.have.status(400);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Please enter a Folder name');
         }));
     });
 });

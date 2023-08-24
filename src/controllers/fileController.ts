@@ -124,7 +124,6 @@ class FileController {
       })
       res.status(201).json({ message: `${name} folder succesfully created` })
     } catch (error) {
-      console.log(error)
       if (error instanceof RequestBodyError) {
         return res.status(400).json({ error: error.message })
       }

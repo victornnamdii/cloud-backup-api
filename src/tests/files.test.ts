@@ -57,7 +57,7 @@ const binaryParser = function (res: any, cb: any): void {
   })
 }
 
-describe('File Tests', () => {
+describe('File and Folder Tests', () => {
   let id: string
   let id2: string
   before(async () => {
@@ -2248,6 +2248,158 @@ describe('File Tests', () => {
 
       expect(res).to.have.status(401)
       expect(res.body.error).to.equal('Unauthorized')
+    })
+  })
+
+  describe('POST /folders', () => {
+    it('should create a new folder', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app).post('/folders').send({
+        name: 'newboys'
+      }).set('Authorization', `Bearer ${token}`)
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message',
+        'newboys folder succesfully created'
+      )
+    })
+
+    it('should create a new folder, alt', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app).post(`/folders?token=${token}`).send({
+        name: 'newboys2'
+      })
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message',
+        'newboys2 folder succesfully created'
+      )
+    })
+
+    it('should say folder already exists', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app).post(`/folders?token=${token}`).send({
+        name: 'testfolder'
+      })
+
+      expect(res).to.have.status(400)
+      expect(res.body).to.have.property(
+        'error',
+        'testfolder folder already exists'
+      )
+    })
+
+    it('should say name cannot be null', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app).post(`/folders?token=${token}`).send({
+        name: 'null'
+      })
+
+      expect(res).to.have.status(400)
+      expect(res.body).to.have.property(
+        'error',
+        'Name cannot be "null"'
+      )
+    })
+
+    it('should say name error', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app).post(`/folders?token=${token}`).send({})
+
+      expect(res).to.have.status(400)
+      expect(res.body).to.have.property(
+        'error',
+        'Please enter a Folder name'
+      )
+    })
+
+    it('should say name error, alt', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app).post(`/folders?token=${token}`).send({
+        name: true
+      })
+
+      expect(res).to.have.status(400)
+      expect(res.body).to.have.property(
+        'error',
+        'Please enter a Folder name'
+      )
+    })
+
+    it('should say name error, alt 2', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app).post(`/folders?token=${token}`).send({
+        name: undefined
+      })
+
+      expect(res).to.have.status(400)
+      expect(res.body).to.have.property(
+        'error',
+        'Please enter a Folder name'
+      )
+    })
+
+    it('should say name error, alt 3', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app).post(`/folders?token=${token}`).send({
+        name: null
+      })
+
+      expect(res).to.have.status(400)
+      expect(res.body).to.have.property(
+        'error',
+        'Please enter a Folder name'
+      )
     })
   })
 })
