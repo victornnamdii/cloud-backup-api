@@ -83,7 +83,7 @@ const binaryParser = function (res, cb) {
             displayName: 'Test',
             folder_id: null,
             link: 'https://risevest.com',
-            s3_key: 'risevest_cloud_1441553a-9218-42c5-8ad2-794c7bf6dd10_t-rex-roar.mp3',
+            s3_key: process.env.VALID_S3_KEY,
             user_id: id,
             mimetype: 'audio/mpeg',
             history: JSON.stringify([{ event: 'Created', date: new Date() }])
@@ -94,7 +94,7 @@ const binaryParser = function (res, cb) {
             displayName: 'Test',
             folder_id: folder[0].id,
             link: 'https://risevest.com',
-            s3_key: 'risevest_cloud_1441553a-9218-42c5-8ad2-794c7bf6dd10_t-rex-roar.mp3',
+            s3_key: process.env.VALID_S3_KEY,
             user_id: id,
             mimetype: 'audio/mpeg',
             history: JSON.stringify([{ event: 'Created', date: new Date() }])
@@ -1926,6 +1926,45 @@ const binaryParser = function (res, cb) {
                 fileName: 'test5',
                 source: 'null'
             });
+            (0, chai_1.expect)(res).to.have.status(401);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Unauthorized');
+        }));
+    });
+    (0, mocha_1.describe)('DELETE /folder/:folderName', () => {
+        (0, mocha_1.it)('should delete folder', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post('/folders').send({
+                name: 'newboys5'
+            }).set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', 'newboys5 folder succesfully created');
+            res = yield chai_1.default.request(server_1.default)
+                .delete('/folders/newboys5')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            (0, chai_1.expect)(res.body).to.have.property('message', 'newboys5 successfully deleted');
+        }));
+        (0, mocha_1.it)('should say folder not found', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .delete('/folders/newboys7')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(404);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'You do not have a folder named newboys7');
+        }));
+        (0, mocha_1.it)('should say unauthorized', () => __awaiter(void 0, void 0, void 0, function* () {
+            const res = yield chai_1.default.request(server_1.default)
+                .delete('/folders/testfolder');
             (0, chai_1.expect)(res).to.have.status(401);
             (0, chai_1.expect)(res.body).to.have.property('error', 'Unauthorized');
         }));

@@ -84,7 +84,7 @@ describe('File and Folder Tests', () => {
         displayName: 'Test',
         folder_id: null,
         link: 'https://risevest.com',
-        s3_key: 'risevest_cloud_1441553a-9218-42c5-8ad2-794c7bf6dd10_t-rex-roar.mp3',
+        s3_key: process.env.VALID_S3_KEY,
         user_id: id,
         mimetype: 'audio/mpeg',
         history: JSON.stringify([{ event: 'Created', date: new Date() }])
@@ -96,7 +96,7 @@ describe('File and Folder Tests', () => {
         displayName: 'Test',
         folder_id: folder[0].id,
         link: 'https://risevest.com',
-        s3_key: 'risevest_cloud_1441553a-9218-42c5-8ad2-794c7bf6dd10_t-rex-roar.mp3',
+        s3_key: process.env.VALID_S3_KEY,
         user_id: id,
         mimetype: 'audio/mpeg',
         history: JSON.stringify([{ event: 'Created', date: new Date() }])
@@ -2604,6 +2604,67 @@ describe('File and Folder Tests', () => {
         fileName: 'test5',
         source: 'null'
       })
+
+      expect(res).to.have.status(401)
+      expect(res.body).to.have.property(
+        'error',
+        'Unauthorized'
+      )
+    })
+  })
+
+  describe('DELETE /folder/:folderName', () => {
+    it('should delete folder', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app).post('/folders').send({
+        name: 'newboys5'
+      }).set('Authorization', `Bearer ${token}`)
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message',
+        'newboys5 folder succesfully created'
+      )
+
+      res = await chai.request(app)
+        .delete('/folders/newboys5')
+        .set('Authorization', `Bearer ${token}`)
+
+      expect(res).to.have.status(200)
+      expect(res.body).to.have.property(
+        'message',
+        'newboys5 successfully deleted'
+      )
+    })
+
+    it('should say folder not found', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .delete('/folders/newboys7')
+        .set('Authorization', `Bearer ${token}`)
+
+      expect(res).to.have.status(404)
+      expect(res.body).to.have.property(
+        'error',
+        'You do not have a folder named newboys7'
+      )
+    })
+
+    it('should say unauthorized', async () => {
+      const res = await chai.request(app)
+        .delete('/folders/testfolder')
 
       expect(res).to.have.status(401)
       expect(res.body).to.have.property(
