@@ -2083,4 +2083,71 @@ describe('File Tests', () => {
       )
     })
   })
+
+  describe('GET /folders', () => {
+    it('should get all folders', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/folders')
+        .set('Authorization', `Bearer ${token}`)
+
+      expect(res).to.have.status(200)
+      expect(res.body.folders).to.exist
+
+      const folders: Array<{
+        folder_name: string
+        file_count: number
+      }> = res.body.folders
+
+      folders.forEach((folder) => {
+        expect(folder.file_count).to.exist
+        expect(folder.file_count).to.be.a('number')
+        expect(folder.folder_name).to.exist
+        expect(folder.folder_name).to.be.a('string')
+      })
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should get all folders, alt', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get(`/folders?token=${token}`)
+
+      expect(res).to.have.status(200)
+      expect(res.body.folders).to.exist
+
+      const folders: Array<{
+        folder_name: string
+        file_count: number
+      }> = res.body.folders
+
+      folders.forEach((folder) => {
+        expect(folder.file_count).to.exist
+        expect(folder.file_count).to.be.a('number')
+        expect(folder.folder_name).to.exist
+        expect(folder.folder_name).to.be.a('string')
+      })
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say unauthorized', async () => {
+      const res = await chai.request(app)
+        .get('/folders')
+
+      expect(res).to.have.status(401)
+      expect(res.body.error).to.equal('Unauthorized')
+    })
+  })
 })

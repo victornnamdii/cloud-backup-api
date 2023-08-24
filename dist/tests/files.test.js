@@ -1549,4 +1549,53 @@ const binaryParser = function (res, cb) {
             (0, chai_1.expect)(res.body).to.have.property('error', 'Unauthorized');
         }));
     });
+    (0, mocha_1.describe)('GET /folders', () => {
+        (0, mocha_1.it)('should get all folders', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/folders')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            (0, chai_1.expect)(res.body.folders).to.exist;
+            const folders = res.body.folders;
+            folders.forEach((folder) => {
+                (0, chai_1.expect)(folder.file_count).to.exist;
+                (0, chai_1.expect)(folder.file_count).to.be.a('number');
+                (0, chai_1.expect)(folder.folder_name).to.exist;
+                (0, chai_1.expect)(folder.folder_name).to.be.a('string');
+            });
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should get all folders, alt', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get(`/folders?token=${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            (0, chai_1.expect)(res.body.folders).to.exist;
+            const folders = res.body.folders;
+            folders.forEach((folder) => {
+                (0, chai_1.expect)(folder.file_count).to.exist;
+                (0, chai_1.expect)(folder.file_count).to.be.a('number');
+                (0, chai_1.expect)(folder.folder_name).to.exist;
+                (0, chai_1.expect)(folder.folder_name).to.be.a('string');
+            });
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should say unauthorized', () => __awaiter(void 0, void 0, void 0, function* () {
+            const res = yield chai_1.default.request(server_1.default)
+                .get('/folders');
+            (0, chai_1.expect)(res).to.have.status(401);
+            (0, chai_1.expect)(res.body.error).to.equal('Unauthorized');
+        }));
+    });
 });
