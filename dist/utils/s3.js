@@ -9,9 +9,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.NoSuchKey = exports.createReadStream = void 0;
+exports.NotFound = exports.NoSuchKey = exports.createReadStream = void 0;
 const client_s3_1 = require("@aws-sdk/client-s3");
 Object.defineProperty(exports, "NoSuchKey", { enumerable: true, get: function () { return client_s3_1.NoSuchKey; } });
+Object.defineProperty(exports, "NotFound", { enumerable: true, get: function () { return client_s3_1.NotFound; } });
 const s3_readstream_1 = require("s3-readstream");
 const uploadMiddleware_1 = require("../middlewares/uploadMiddleware");
 const createReadStream = (key) => __awaiter(void 0, void 0, void 0, function* () {

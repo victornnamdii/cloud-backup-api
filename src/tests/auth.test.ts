@@ -683,9 +683,25 @@ describe('Authentication Tests', () => {
       expect(res.body).to.be.an('object')
       expect(res.body).to.have.property('token')
       const adminToken = res.body.token
-      const id = v4()
 
-      res = await chai.request(app).delete(`/session/${id}`)
+      const users = await db<User>('users')
+        .select('id')
+
+      const ids: string[] = []
+      users.forEach((user) => {
+        ids.push(user.id)
+      })
+
+      const wronguuid = (): string | undefined => {
+        const uuid = v4()
+        if (ids.includes(uuid)) {
+          wronguuid()
+        } else {
+          return uuid
+        }
+      }
+
+      res = await chai.request(app).delete(`/session/${wronguuid()}`)
         .set('Authorization', `Bearer ${adminToken}`)
 
       expect(res).to.have.status(404)

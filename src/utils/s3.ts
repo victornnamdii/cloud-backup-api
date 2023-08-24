@@ -1,7 +1,8 @@
 import {
   GetObjectCommand,
   HeadObjectCommand,
-  NoSuchKey
+  NoSuchKey,
+  NotFound
 } from '@aws-sdk/client-s3'
 import { S3ReadStream, type S3ReadStreamOptions } from 's3-readstream'
 import { s3client } from '../middlewares/uploadMiddleware'
@@ -24,4 +25,4 @@ const createReadStream = async (key: string): Promise<S3ReadStream> => {
   return new S3ReadStream(options)
 }
 
-export { createReadStream, NoSuchKey }
+export { createReadStream, NoSuchKey, NotFound }

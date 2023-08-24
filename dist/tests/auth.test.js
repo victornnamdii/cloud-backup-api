@@ -492,8 +492,22 @@ chai_1.default.use(chai_http_1.default);
             (0, chai_1.expect)(res.body).to.be.an('object');
             (0, chai_1.expect)(res.body).to.have.property('token');
             const adminToken = res.body.token;
-            const id = (0, uuid_1.v4)();
-            res = yield chai_1.default.request(server_1.default).delete(`/session/${id}`)
+            const users = yield (0, db_1.default)('users')
+                .select('id');
+            const ids = [];
+            users.forEach((user) => {
+                ids.push(user.id);
+            });
+            const wronguuid = () => {
+                const uuid = (0, uuid_1.v4)();
+                if (ids.includes(uuid)) {
+                    wronguuid();
+                }
+                else {
+                    return uuid;
+                }
+            };
+            res = yield chai_1.default.request(server_1.default).delete(`/session/${wronguuid()}`)
                 .set('Authorization', `Bearer ${adminToken}`);
             (0, chai_1.expect)(res).to.have.status(404);
             (0, chai_1.expect)(res.body).to.be.an('object');

@@ -6,7 +6,7 @@ import validateNewFileBody from '../utils/validators/newFile'
 import { deleteObject } from '../middlewares/uploadMiddleware'
 import validateFileReviewBody from '../utils/validators/fileReview'
 import validateNewFolderBody from '../utils/validators/newFolder'
-import { createReadStream, NoSuchKey } from '../utils/s3'
+import { createReadStream, NoSuchKey, NotFound } from '../utils/s3'
 import validateUpdateFolderBody from '../utils/validators/updateFolder'
 import validateUpdateFileBody from '../utils/validators/updateFile'
 
@@ -170,12 +170,11 @@ class FileController {
   static async getAllFiles (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> {
     try {
       let files: File[]
-      if (req.user?.is_superuser) {
+      if (!req.user?.is_superuser) {
         files = await db.where(
           'files.user_id', req.user?.id
         ).select(
           'files.id as file_id',
-          'files.user_id as file_user_id',
           'files.displayName as file_name',
           'folders.displayName as folder_name',
           'files.history as file_history'
@@ -185,6 +184,7 @@ class FileController {
         files = await db
           .select(
             'files.id as file_id',
+            'files.user_id as file_user_id',
             'files.displayName as file_name',
             'folders.displayName as folder_name',
             'files.history as file_history'
@@ -421,7 +421,8 @@ class FileController {
       const stream = await createReadStream(file.s3_key)
       stream.pipe(res)
     } catch (error) {
-      if (error instanceof NoSuchKey) {
+      if (error instanceof NoSuchKey ||
+        error instanceof NotFound) {
         return res.status(404).json({ error: 'File not found in storage' })
       }
       next(error)
@@ -457,7 +458,8 @@ class FileController {
       }
       res.render('stream', { file, token: req.user?.token })
     } catch (error) {
-      if (error instanceof NoSuchKey) {
+      if (error instanceof NoSuchKey ||
+        error instanceof NotFound) {
         return res.status(404).json({ error: 'File not found in storage' })
       }
       next(error)

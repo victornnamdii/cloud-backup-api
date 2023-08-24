@@ -2,6 +2,7 @@ import chai, { expect } from 'chai'
 import { before, after, describe, it } from 'mocha'
 import dotenv from 'dotenv'
 import chaiHttp from 'chai-http'
+import { v4 } from 'uuid'
 import db from '../config/db'
 import app from '../server'
 import { redisClient } from '../config/redis'
@@ -43,8 +44,20 @@ interface User {
   is_superuser: boolean
 }
 
+const binaryParser = function (res: any, cb: any): void {
+  res.setEncoding('binary')
+  res.data = ''
+  res.on('data', function (chunk: string) {
+    res.data += chunk
+  })
+  res.on('end', function () {
+    cb(null, Buffer.from(res.data, 'binary'))
+  })
+}
+
 describe('File Tests', () => {
   let id: string
+  let id2: string
   before(async () => {
     const user = await db<User>('users')
       .insert({
@@ -68,7 +81,7 @@ describe('File Tests', () => {
         displayName: 'Test',
         folder_id: null,
         link: 'https://risevest.com',
-        s3_key: 'rise',
+        s3_key: 'risevest_cloud_1441553a-9218-42c5-8ad2-794c7bf6dd10_t-rex-roar.mp3',
         user_id: id,
         mimetype: 'image/jpeg',
         history: JSON.stringify([{ event: 'Created', date: new Date() }])
@@ -80,8 +93,29 @@ describe('File Tests', () => {
         displayName: 'Test',
         folder_id: folder[0].id,
         link: 'https://risevest.com',
-        s3_key: 'rise',
+        s3_key: 'risevest_cloud_1441553a-9218-42c5-8ad2-794c7bf6dd10_t-rex-roar.mp3',
         user_id: id,
+        mimetype: 'image/jpeg',
+        history: JSON.stringify([{ event: 'Created', date: new Date() }])
+      })
+
+    const user2 = await db<User>('users')
+      .insert({
+        email: process.env.WRONG_TESTS_MAIL,
+        password: await hashPassword('test123'),
+        first_name: 'Victor',
+        last_name: 'Ilodiuba'
+      }, ['id'])
+
+    id2 = user2[0].id
+    await db<File>('files')
+      .insert({
+        name: 'test',
+        displayName: 'Test',
+        folder_id: null,
+        link: 'https://risevest.com',
+        s3_key: 'nosuchkey',
+        user_id: user2[0].id,
         mimetype: 'image/jpeg',
         history: JSON.stringify([{ event: 'Created', date: new Date() }])
       })
@@ -91,12 +125,20 @@ describe('File Tests', () => {
       .where({ user_id: id })
       .del()
 
+    await db<File>('files')
+      .where({ user_id: id2 })
+      .del()
+
     await db<Folder>('folders')
       .where({ user_id: id })
       .del()
 
     await db<User>('users')
       .where({ email: process.env.TESTS_MAIL })
+      .del()
+
+    await db<User>('users')
+      .where({ email: process.env.WRONG_TESTS_MAIL })
       .del()
   })
   describe('GET /files', () => {
@@ -281,6 +323,295 @@ describe('File Tests', () => {
         'error',
         'Unauthorized'
       )
+    })
+  })
+
+  describe('GET /files/download/:fileId', () => {
+    it('should download file', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      //   console.log(files)
+      res = await chai.request(app)
+        .get(`/files/download/${files[0].file_id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .buffer()
+        .parse(binaryParser)
+
+      expect(res).to.have.status(200)
+      expect(res.headers['transfer-encoding']).to.equal('chunked')
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should download file, alt', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get(`/files?token=${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      res = await chai.request(app)
+        .get(`/files/download/${files[0].file_id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .buffer()
+        .parse(binaryParser)
+
+      expect(res).to.have.status(200)
+      expect(res.headers['transfer-encoding']).to.equal('chunked')
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should download file for admin', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      res = await chai.request(app).post('/login').send({
+        email: process.env.ADMIN_EMAIL,
+        password: process.env.ADMIN_PASSWORD
+      })
+      expect(res).to.have.status(200)
+      const adminToken = res.body.token
+
+      res = await chai.request(app)
+        .get(`/files/download/${files[0].file_id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .buffer()
+        .parse(binaryParser)
+
+      expect(res).to.have.status(200)
+      expect(res.headers['transfer-encoding']).to.equal('chunked')
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+      await redisClient.del(`auth_${decodeURIComponent(adminToken)}`)
+    })
+
+    it('should download file for admin, alt', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get(`/files?token=${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      res = await chai.request(app).post('/login').send({
+        email: process.env.ADMIN_EMAIL,
+        password: process.env.ADMIN_PASSWORD
+      })
+      expect(res).to.have.status(200)
+      const adminToken = res.body.token
+
+      res = await chai.request(app)
+        .get(`/files/download/${files[0].file_id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .buffer()
+        .parse(binaryParser)
+
+      expect(res).to.have.status(200)
+      expect(res.headers['transfer-encoding']).to.equal('chunked')
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+      await redisClient.del(`auth_${decodeURIComponent(adminToken)}`)
+    })
+
+    it('should say invalid id', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files/download/invalidid')
+        .set('Authorization', `Bearer ${token}`)
+        .buffer()
+        .parse(binaryParser)
+
+      expect(res).to.have.status(400)
+      expect(res.header['content-type']
+        .startsWith('application/json')).to.equal(true)
+      const jsonString = res.body.toString()
+      const json = JSON.parse(jsonString)
+      expect(json).to.have.property('error', 'Invalid file id')
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say unauthorized', async () => {
+      const uuid = v4()
+      const res = await chai.request(app)
+        .get(`/files/download/${uuid}`)
+      expect(res).to.have.status(401)
+      expect(res.body).to.have.property(
+        'error',
+        'Unauthorized'
+      )
+    })
+
+    it('should say unauthorized, alt', async () => {
+      const res = await chai.request(app)
+        .get('/files/download/fileid')
+        .set('Authorization', 'Bearer wrongtoken')
+      expect(res).to.have.status(401)
+      expect(res.body).to.have.property(
+        'error',
+        'Unauthorized'
+      )
+    })
+
+    it('should say unauthorized, alt 2', async () => {
+      const res = await chai.request(app)
+        .get('/files/download/file?token=wrongtoken')
+      expect(res).to.have.status(401)
+      expect(res.body).to.have.property(
+        'error',
+        'Unauthorized'
+      )
+    })
+
+    it('should say file not found', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      const ids: string[] = []
+
+      files.forEach((file) => {
+        ids.push(file.file_id)
+      })
+
+      const wronguuid = (): string | undefined => {
+        const uuid = v4()
+        if (ids.includes(uuid)) {
+          wronguuid()
+        } else {
+          return uuid
+        }
+      }
+
+      //   console.log(files)
+      res = await chai.request(app)
+        .get(`/files/download/${wronguuid()}`)
+        .set('Authorization', `Bearer ${token}`)
+        .buffer()
+        .parse(binaryParser)
+
+      expect(res).to.have.status(404)
+      expect(res.header['content-type']
+        .startsWith('application/json')).to.equal(true)
+      const jsonString = res.body.toString()
+      const json = JSON.parse(jsonString)
+      expect(json).to.have.property('error', 'File not found. Please check file id in the URL.')
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say file not found in storage', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.WRONG_TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      //   console.log(files)
+      res = await chai.request(app)
+        .get(`/files/download/${files[0].file_id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .buffer()
+        .parse(binaryParser)
+
+      expect(res).to.have.status(404)
+      expect(res.header['content-type']
+        .startsWith('application/json')).to.equal(true)
+      const jsonString = res.body.toString()
+      const json = JSON.parse(jsonString)
+      expect(json).to.have.property('error', 'File not found in storage')
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
     })
   })
 })
