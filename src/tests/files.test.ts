@@ -2150,4 +2150,104 @@ describe('File Tests', () => {
       expect(res.body.error).to.equal('Unauthorized')
     })
   })
+
+  describe('GET /folders/:folderName', () => {
+    it('should get all files in folder', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/folders/testfolder')
+        .set('Authorization', `Bearer ${token}`)
+
+      expect(res).to.have.status(200)
+      expect(res.body.files).to.exist
+
+      const files: Array<{
+        file_name: string
+        file_id: string
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      files.forEach((file) => {
+        expect(file.file_id).to.exist
+        expect(file.file_id).to.be.a('string')
+        expect(file.file_name).to.exist
+        expect(file.file_name).to.be.a('string')
+        expect(file.file_history).to.exist
+        expect(file.file_history).to.be.an('array')
+        file.file_history.forEach((event) => {
+          expect(event.event).to.exist
+          expect(event.date).to.exist
+        })
+      })
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should get all files in folder, alt', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get(`/folders/testfolder?token=${token}`)
+
+      expect(res).to.have.status(200)
+      expect(res.body.files).to.exist
+
+      const files: Array<{
+        file_name: string
+        file_id: string
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      files.forEach((file) => {
+        expect(file.file_id).to.exist
+        expect(file.file_id).to.be.a('string')
+        expect(file.file_name).to.exist
+        expect(file.file_name).to.be.a('string')
+        expect(file.file_history).to.exist
+        expect(file.file_history).to.be.an('array')
+        file.file_history.forEach((event) => {
+          expect(event.event).to.exist
+          expect(event.date).to.exist
+        })
+      })
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should get all files in folder, alt', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get(`/folders/wrongfolderdoes?token=${token}`)
+
+      expect(res).to.have.status(404)
+      expect(res.body).to.have.property(
+        'error',
+        'You do not have a folder named wrongfolderdoes'
+      )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say unauthorized', async () => {
+      const res = await chai.request(app)
+        .get('/folders/testfolder')
+
+      expect(res).to.have.status(401)
+      expect(res.body.error).to.equal('Unauthorized')
+    })
+  })
 })

@@ -199,7 +199,7 @@ class FileController {
                 }
                 const files = yield (0, db_1.default)('files')
                     .where('folder_id', '=', subquery.id)
-                    .select('files.id as file_id', 'files.displayName as file_name');
+                    .select('files.id as file_id', 'files.displayName as file_name', 'files.history as file_history');
                 return res.status(200).json({ files });
             }
             catch (error) {

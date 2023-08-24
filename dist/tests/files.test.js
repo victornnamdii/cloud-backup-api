@@ -1598,4 +1598,78 @@ const binaryParser = function (res, cb) {
             (0, chai_1.expect)(res.body.error).to.equal('Unauthorized');
         }));
     });
+    (0, mocha_1.describe)('GET /folders/:folderName', () => {
+        (0, mocha_1.it)('should get all files in folder', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/folders/testfolder')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            files.forEach((file) => {
+                (0, chai_1.expect)(file.file_id).to.exist;
+                (0, chai_1.expect)(file.file_id).to.be.a('string');
+                (0, chai_1.expect)(file.file_name).to.exist;
+                (0, chai_1.expect)(file.file_name).to.be.a('string');
+                (0, chai_1.expect)(file.file_history).to.exist;
+                (0, chai_1.expect)(file.file_history).to.be.an('array');
+                file.file_history.forEach((event) => {
+                    (0, chai_1.expect)(event.event).to.exist;
+                    (0, chai_1.expect)(event.date).to.exist;
+                });
+            });
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should get all files in folder, alt', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get(`/folders/testfolder?token=${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            files.forEach((file) => {
+                (0, chai_1.expect)(file.file_id).to.exist;
+                (0, chai_1.expect)(file.file_id).to.be.a('string');
+                (0, chai_1.expect)(file.file_name).to.exist;
+                (0, chai_1.expect)(file.file_name).to.be.a('string');
+                (0, chai_1.expect)(file.file_history).to.exist;
+                (0, chai_1.expect)(file.file_history).to.be.an('array');
+                file.file_history.forEach((event) => {
+                    (0, chai_1.expect)(event.event).to.exist;
+                    (0, chai_1.expect)(event.date).to.exist;
+                });
+            });
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should get all files in folder, alt', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get(`/folders/wrongfolderdoes?token=${token}`);
+            (0, chai_1.expect)(res).to.have.status(404);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'You do not have a folder named wrongfolderdoes');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should say unauthorized', () => __awaiter(void 0, void 0, void 0, function* () {
+            const res = yield chai_1.default.request(server_1.default)
+                .get('/folders/testfolder');
+            (0, chai_1.expect)(res).to.have.status(401);
+            (0, chai_1.expect)(res.body.error).to.equal('Unauthorized');
+        }));
+    });
 });
