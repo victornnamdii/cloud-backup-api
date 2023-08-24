@@ -79,10 +79,10 @@ const requireFolderAuth = async (req: Request, res: Response, next: NextFunction
     if (folderName === 'null') {
       folderName = null
     }
-    const Folders = db<Folder>('folders')
+
     let destinationFolderId: string | null = null
     if (folderName !== null) {
-      const destinationFolder = await Folders.where({
+      const destinationFolder = await db<Folder>('folders').where({
         name: folderName.toLowerCase(),
         user_id: req.user.id
       }).first()
@@ -103,8 +103,7 @@ const requireFolderAuth = async (req: Request, res: Response, next: NextFunction
       }
     }
 
-    const Files = db<File>('files')
-    const file = await Files.where({
+    const file = await db<File>('files').where({
       name: fileName.toLowerCase(),
       user_id: req.user.id,
       folder_id: sourceFolder?.id ?? null

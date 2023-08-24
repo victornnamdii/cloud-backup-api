@@ -80,7 +80,7 @@ describe('File and Folder Tests', () => {
 
     await db<File>('files')
       .insert({
-        name: 'test',
+        name: 'test2',
         displayName: 'Test',
         folder_id: null,
         link: 'https://risevest.com',
@@ -2294,6 +2294,7 @@ describe('File and Folder Tests', () => {
         'message',
         'newboys folder succesfully created'
       )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
     })
 
     it('should create a new folder, alt', async () => {
@@ -2313,6 +2314,7 @@ describe('File and Folder Tests', () => {
         'message',
         'newboys2 folder succesfully created'
       )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
     })
 
     it('should say folder already exists', async () => {
@@ -2332,6 +2334,7 @@ describe('File and Folder Tests', () => {
         'error',
         'testfolder folder already exists'
       )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
     })
 
     it('should say name cannot be null', async () => {
@@ -2351,6 +2354,7 @@ describe('File and Folder Tests', () => {
         'error',
         'Name cannot be "null"'
       )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
     })
 
     it('should say name error', async () => {
@@ -2368,6 +2372,7 @@ describe('File and Folder Tests', () => {
         'error',
         'Please enter a Folder name'
       )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
     })
 
     it('should say name error, alt', async () => {
@@ -2387,6 +2392,7 @@ describe('File and Folder Tests', () => {
         'error',
         'Please enter a Folder name'
       )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
     })
 
     it('should say name error, alt 2', async () => {
@@ -2406,6 +2412,7 @@ describe('File and Folder Tests', () => {
         'error',
         'Please enter a Folder name'
       )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
     })
 
     it('should say name error, alt 3', async () => {
@@ -2425,11 +2432,177 @@ describe('File and Folder Tests', () => {
         'error',
         'Please enter a Folder name'
       )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
     })
 
     it('should say unauthorized', async () => {
       const res = await chai.request(app).post('/folders').send({
         name: 'tratra'
+      })
+
+      expect(res).to.have.status(401)
+      expect(res.body).to.have.property(
+        'error',
+        'Unauthorized'
+      )
+    })
+  })
+
+  describe('PUT /folders/:folderName', () => {
+    it('should move file to folder', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app).put('/folders/testfolder').send({
+        fileName: 'test2',
+        source: 'null'
+      }).set('Authorization', `Bearer ${token}`)
+      console.log(res.body)
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message',
+        'test2 moved from root directory to testfolder'
+      )
+
+      res = await chai.request(app).put('/folders/null').send({
+        fileName: 'test2',
+        source: 'testfolder'
+      }).set('Authorization', `Bearer ${token}`)
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message',
+        'test2 moved from testfolder to root directory'
+      )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should move file to folder, alt', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app).put(`/folders/testfolder?token=${token}`).send({
+        fileName: 'test2',
+        source: 'null'
+      })
+      console.log(res.body)
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message',
+        'test2 moved from root directory to testfolder'
+      )
+
+      res = await chai.request(app).put(`/folders/null?token=${token}`).send({
+        fileName: 'test2',
+        source: 'testfolder'
+      })
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message',
+        'test2 moved from testfolder to root directory'
+      )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say file already exists', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app).put(`/folders/null?token=${token}`).send({
+        fileName: 'test2',
+        source: 'null'
+      })
+
+      expect(res).to.have.status(400)
+      expect(res.body).to.have.property(
+        'error',
+        'test2 already exists in root directory'
+      )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say do not have folder', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app).put(`/folders/nofolder?token=${token}`).send({
+        fileName: 'test2',
+        source: 'null'
+      })
+
+      expect(res).to.have.status(404)
+      expect(res.body).to.have.property(
+        'error',
+        'You do not have a folder named nofolder'
+      )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say do not have folder, alt', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app).put(`/folders/testfolder?token=${token}`).send({
+        fileName: 'test2',
+        source: 'nofolder'
+      })
+
+      expect(res).to.have.status(404)
+      expect(res.body).to.have.property(
+        'error',
+        'You do not have a folder named nofolder'
+      )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say do not have file', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app).put(`/folders/testfolder?token=${token}`).send({
+        fileName: 'test5',
+        source: 'null'
+      })
+
+      expect(res).to.have.status(404)
+      expect(res.body).to.have.property(
+        'error',
+        'You do not have a file named test5 in root directory'
+      )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say unauthorized', async () => {
+      const res = await chai.request(app).put('/folders/testfolder').send({
+        fileName: 'test5',
+        source: 'null'
       })
 
       expect(res).to.have.status(401)

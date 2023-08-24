@@ -80,10 +80,9 @@ const requireFolderAuth = (req, res, next) => __awaiter(void 0, void 0, void 0, 
         if (folderName === 'null') {
             folderName = null;
         }
-        const Folders = (0, db_1.default)('folders');
         let destinationFolderId = null;
         if (folderName !== null) {
-            const destinationFolder = yield Folders.where({
+            const destinationFolder = yield (0, db_1.default)('folders').where({
                 name: folderName.toLowerCase(),
                 user_id: req.user.id
             }).first();
@@ -102,8 +101,7 @@ const requireFolderAuth = (req, res, next) => __awaiter(void 0, void 0, void 0, 
                 return res.status(404).json({ error: `You do not have a folder named ${source}` });
             }
         }
-        const Files = (0, db_1.default)('files');
-        const file = yield Files.where({
+        const file = yield (0, db_1.default)('files').where({
             name: fileName.toLowerCase(),
             user_id: req.user.id,
             folder_id: (_a = sourceFolder === null || sourceFolder === void 0 ? void 0 : sourceFolder.id) !== null && _a !== void 0 ? _a : null

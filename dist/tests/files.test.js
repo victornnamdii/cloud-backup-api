@@ -79,7 +79,7 @@ const binaryParser = function (res, cb) {
         }, ['id']);
         yield (0, db_1.default)('files')
             .insert({
-            name: 'test',
+            name: 'test2',
             displayName: 'Test',
             folder_id: null,
             link: 'https://risevest.com',
@@ -1710,6 +1710,7 @@ const binaryParser = function (res, cb) {
             }).set('Authorization', `Bearer ${token}`);
             (0, chai_1.expect)(res).to.have.status(201);
             (0, chai_1.expect)(res.body).to.have.property('message', 'newboys folder succesfully created');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
         (0, mocha_1.it)('should create a new folder, alt', () => __awaiter(void 0, void 0, void 0, function* () {
             let res = yield chai_1.default.request(server_1.default).post('/login').send({
@@ -1723,6 +1724,7 @@ const binaryParser = function (res, cb) {
             });
             (0, chai_1.expect)(res).to.have.status(201);
             (0, chai_1.expect)(res.body).to.have.property('message', 'newboys2 folder succesfully created');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
         (0, mocha_1.it)('should say folder already exists', () => __awaiter(void 0, void 0, void 0, function* () {
             let res = yield chai_1.default.request(server_1.default).post('/login').send({
@@ -1736,6 +1738,7 @@ const binaryParser = function (res, cb) {
             });
             (0, chai_1.expect)(res).to.have.status(400);
             (0, chai_1.expect)(res.body).to.have.property('error', 'testfolder folder already exists');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
         (0, mocha_1.it)('should say name cannot be null', () => __awaiter(void 0, void 0, void 0, function* () {
             let res = yield chai_1.default.request(server_1.default).post('/login').send({
@@ -1749,6 +1752,7 @@ const binaryParser = function (res, cb) {
             });
             (0, chai_1.expect)(res).to.have.status(400);
             (0, chai_1.expect)(res.body).to.have.property('error', 'Name cannot be "null"');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
         (0, mocha_1.it)('should say name error', () => __awaiter(void 0, void 0, void 0, function* () {
             let res = yield chai_1.default.request(server_1.default).post('/login').send({
@@ -1760,6 +1764,7 @@ const binaryParser = function (res, cb) {
             res = yield chai_1.default.request(server_1.default).post(`/folders?token=${token}`).send({});
             (0, chai_1.expect)(res).to.have.status(400);
             (0, chai_1.expect)(res.body).to.have.property('error', 'Please enter a Folder name');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
         (0, mocha_1.it)('should say name error, alt', () => __awaiter(void 0, void 0, void 0, function* () {
             let res = yield chai_1.default.request(server_1.default).post('/login').send({
@@ -1773,6 +1778,7 @@ const binaryParser = function (res, cb) {
             });
             (0, chai_1.expect)(res).to.have.status(400);
             (0, chai_1.expect)(res.body).to.have.property('error', 'Please enter a Folder name');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
         (0, mocha_1.it)('should say name error, alt 2', () => __awaiter(void 0, void 0, void 0, function* () {
             let res = yield chai_1.default.request(server_1.default).post('/login').send({
@@ -1786,6 +1792,7 @@ const binaryParser = function (res, cb) {
             });
             (0, chai_1.expect)(res).to.have.status(400);
             (0, chai_1.expect)(res.body).to.have.property('error', 'Please enter a Folder name');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
         (0, mocha_1.it)('should say name error, alt 3', () => __awaiter(void 0, void 0, void 0, function* () {
             let res = yield chai_1.default.request(server_1.default).post('/login').send({
@@ -1799,10 +1806,125 @@ const binaryParser = function (res, cb) {
             });
             (0, chai_1.expect)(res).to.have.status(400);
             (0, chai_1.expect)(res.body).to.have.property('error', 'Please enter a Folder name');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
         (0, mocha_1.it)('should say unauthorized', () => __awaiter(void 0, void 0, void 0, function* () {
             const res = yield chai_1.default.request(server_1.default).post('/folders').send({
                 name: 'tratra'
+            });
+            (0, chai_1.expect)(res).to.have.status(401);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Unauthorized');
+        }));
+    });
+    (0, mocha_1.describe)('PUT /folders/:folderName', () => {
+        (0, mocha_1.it)('should move file to folder', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default).put('/folders/testfolder').send({
+                fileName: 'test2',
+                source: 'null'
+            }).set('Authorization', `Bearer ${token}`);
+            console.log(res.body);
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', 'test2 moved from root directory to testfolder');
+            res = yield chai_1.default.request(server_1.default).put('/folders/null').send({
+                fileName: 'test2',
+                source: 'testfolder'
+            }).set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', 'test2 moved from testfolder to root directory');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should move file to folder, alt', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default).put(`/folders/testfolder?token=${token}`).send({
+                fileName: 'test2',
+                source: 'null'
+            });
+            console.log(res.body);
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', 'test2 moved from root directory to testfolder');
+            res = yield chai_1.default.request(server_1.default).put(`/folders/null?token=${token}`).send({
+                fileName: 'test2',
+                source: 'testfolder'
+            });
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', 'test2 moved from testfolder to root directory');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should say file already exists', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default).put(`/folders/null?token=${token}`).send({
+                fileName: 'test2',
+                source: 'null'
+            });
+            (0, chai_1.expect)(res).to.have.status(400);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'test2 already exists in root directory');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should say do not have folder', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default).put(`/folders/nofolder?token=${token}`).send({
+                fileName: 'test2',
+                source: 'null'
+            });
+            (0, chai_1.expect)(res).to.have.status(404);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'You do not have a folder named nofolder');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should say do not have folder, alt', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default).put(`/folders/testfolder?token=${token}`).send({
+                fileName: 'test2',
+                source: 'nofolder'
+            });
+            (0, chai_1.expect)(res).to.have.status(404);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'You do not have a folder named nofolder');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should say do not have file', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default).put(`/folders/testfolder?token=${token}`).send({
+                fileName: 'test5',
+                source: 'null'
+            });
+            (0, chai_1.expect)(res).to.have.status(404);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'You do not have a file named test5 in root directory');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should say unauthorized', () => __awaiter(void 0, void 0, void 0, function* () {
+            const res = yield chai_1.default.request(server_1.default).put('/folders/testfolder').send({
+                fileName: 'test5',
+                source: 'null'
             });
             (0, chai_1.expect)(res).to.have.status(401);
             (0, chai_1.expect)(res.body).to.have.property('error', 'Unauthorized');
