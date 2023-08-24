@@ -349,9 +349,14 @@ class FileController {
           id: fileId
         }).first('id', 'displayName', 's3_key')
       if (subquery === undefined) {
-        return res.status(404).json({ error: `You do not have a file with id ${fileId}` })
+        return res.status(404).json({
+          error: 'File not found. Please check file id in the URL.'
+        })
       }
-      await deleteObject({ key: subquery.s3_key })
+      deleteObject({ key: subquery.s3_key })
+        .catch(() => {
+          console.log(`Didn't delete ${subquery.s3_key}`)
+        })
 
       await db<File>('files')
         .del()

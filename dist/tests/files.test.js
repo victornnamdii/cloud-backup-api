@@ -1394,7 +1394,7 @@ const binaryParser = function (res, cb) {
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
-        (0, mocha_1.it)('should say unauthorized', () => __awaiter(void 0, void 0, void 0, function* () {
+        (0, mocha_1.it)('should say page not found', () => __awaiter(void 0, void 0, void 0, function* () {
             let res = yield chai_1.default.request(server_1.default).post('/login').send({
                 email: process.env.TESTS_MAIL,
                 password: 'test123'
@@ -1416,7 +1416,7 @@ const binaryParser = function (res, cb) {
             (0, chai_1.expect)(res.body).to.have.property('error', 'Page not found');
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
-        (0, mocha_1.it)('should say unauthorized, alt', () => __awaiter(void 0, void 0, void 0, function* () {
+        (0, mocha_1.it)('should say page not found, alt', () => __awaiter(void 0, void 0, void 0, function* () {
             let res = yield chai_1.default.request(server_1.default).post('/login').send({
                 email: process.env.TESTS_MAIL,
                 password: 'test123'
@@ -1436,6 +1436,117 @@ const binaryParser = function (res, cb) {
             (0, chai_1.expect)(res).to.have.status(404);
             (0, chai_1.expect)(res.body).to.have.property('error', 'Page not found');
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+    });
+    (0, mocha_1.describe)('DELETE /files/:fileId', () => {
+        (0, mocha_1.it)('should delete file', () => __awaiter(void 0, void 0, void 0, function* () {
+            const file = yield (0, db_1.default)('files')
+                .insert({
+                name: 'testdelete',
+                displayName: 'Test',
+                folder_id: null,
+                link: 'https://risevest.com',
+                s3_key: 'testalldelete',
+                user_id: id,
+                mimetype: 'audio/mpeg',
+                history: JSON.stringify([{ event: 'Created', date: new Date() }])
+            }, ['id', 'displayName']);
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .delete(`/files/${file[0].id}`)
+                .send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            }).set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            (0, chai_1.expect)(res.body).to.have.property('message', `${file[0].displayName} successfully deleted`);
+            const deletedFile = yield (0, db_1.default)('files')
+                .where({ id: file[0].id });
+            (0, chai_1.expect)(deletedFile[0]).to.not.exist;
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should delete file, alt', () => __awaiter(void 0, void 0, void 0, function* () {
+            const file = yield (0, db_1.default)('files')
+                .insert({
+                name: 'testdelete',
+                displayName: 'Test',
+                folder_id: null,
+                link: 'https://risevest.com',
+                s3_key: 'testalldelete',
+                user_id: id,
+                mimetype: 'audio/mpeg',
+                history: JSON.stringify([{ event: 'Created', date: new Date() }])
+            }, ['id', 'displayName']);
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .delete(`/files/${file[0].id}?token=${token}`)
+                .send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            (0, chai_1.expect)(res.body).to.have.property('message', `${file[0].displayName} successfully deleted`);
+            const deletedFile = yield (0, db_1.default)('files')
+                .where({ id: file[0].id });
+            (0, chai_1.expect)(deletedFile[0]).to.not.exist;
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should say not found', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/files')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            /* eslint-disable @typescript-eslint/no-unused-expressions */
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            const ids = [];
+            files.forEach((file) => {
+                ids.push(file.file_id);
+            });
+            const wronguuid = () => {
+                const uuid = (0, uuid_1.v4)();
+                if (ids.includes(uuid)) {
+                    wronguuid();
+                }
+                else {
+                    return uuid;
+                }
+            };
+            res = yield chai_1.default.request(server_1.default)
+                .delete(`/files/${wronguuid()}?token=${token}`)
+                .send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(404);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'File not found. Please check file id in the URL.');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should say unauthorized', () => __awaiter(void 0, void 0, void 0, function* () {
+            const res = yield chai_1.default.request(server_1.default)
+                .delete(`/files/${(0, uuid_1.v4)()}`)
+                .send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(401);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Unauthorized');
         }));
     });
 });

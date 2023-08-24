@@ -1941,4 +1941,146 @@ describe('File Tests', () => {
       await redisClient.del(`auth_${decodeURIComponent(token)}`)
     })
   })
+
+  describe('DELETE /files/:fileId', () => {
+    it('should delete file', async () => {
+      const file = await db<File>('files')
+        .insert({
+          name: 'testdelete',
+          displayName: 'Test',
+          folder_id: null,
+          link: 'https://risevest.com',
+          s3_key: 'testalldelete',
+          user_id: id,
+          mimetype: 'audio/mpeg',
+          history: JSON.stringify([{ event: 'Created', date: new Date() }])
+        }, ['id', 'displayName'])
+
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .delete(`/files/${file[0].id}`)
+        .send({
+          email: process.env.TESTS_MAIL,
+          password: 'test123'
+        }).set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      expect(res.body).to.have.property(
+        'message',
+            `${file[0].displayName} successfully deleted`
+      )
+
+      const deletedFile = await db<File>('files')
+        .where({ id: file[0].id })
+      expect(deletedFile[0]).to.not.exist
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should delete file, alt', async () => {
+      const file = await db<File>('files')
+        .insert({
+          name: 'testdelete',
+          displayName: 'Test',
+          folder_id: null,
+          link: 'https://risevest.com',
+          s3_key: 'testalldelete',
+          user_id: id,
+          mimetype: 'audio/mpeg',
+          history: JSON.stringify([{ event: 'Created', date: new Date() }])
+        }, ['id', 'displayName'])
+
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .delete(`/files/${file[0].id}?token=${token}`)
+        .send({
+          email: process.env.TESTS_MAIL,
+          password: 'test123'
+        })
+      expect(res).to.have.status(200)
+      expect(res.body).to.have.property(
+        'message',
+              `${file[0].displayName} successfully deleted`
+      )
+
+      const deletedFile = await db<File>('files')
+        .where({ id: file[0].id })
+      expect(deletedFile[0]).to.not.exist
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say not found', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      const ids: string[] = []
+
+      files.forEach((file) => {
+        ids.push(file.file_id)
+      })
+
+      const wronguuid = (): string | undefined => {
+        const uuid = v4()
+        if (ids.includes(uuid)) {
+          wronguuid()
+        } else {
+          return uuid
+        }
+      }
+
+      res = await chai.request(app)
+        .delete(`/files/${wronguuid()}?token=${token}`)
+        .send({
+          email: process.env.TESTS_MAIL,
+          password: 'test123'
+        })
+      expect(res).to.have.status(404)
+      expect(res.body).to.have.property(
+        'error',
+        'File not found. Please check file id in the URL.'
+      )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say unauthorized', async () => {
+      const res = await chai.request(app)
+        .delete(`/files/${v4()}`)
+        .send({
+          email: process.env.TESTS_MAIL,
+          password: 'test123'
+        })
+      expect(res).to.have.status(401)
+      expect(res.body).to.have.property(
+        'error',
+        'Unauthorized'
+      )
+    })
+  })
 })
