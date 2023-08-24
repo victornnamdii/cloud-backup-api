@@ -50,7 +50,7 @@ const requireAdminAuth = (req: Request, res: Response, next: NextFunction): Fina
       next()
       return
     }
-    return res.status(401).json({ error: 'Unauthorized' })
+    return res.status(404).json({ error: 'Page not found' })
   } catch (error) {
     next(error)
   }

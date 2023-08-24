@@ -1137,7 +1137,12 @@ describe('File Tests', () => {
         .send({ name: 'newname' })
         .set('Authorization', `Bearer ${token}`)
       expect(res).to.have.status(201)
-      expect(res.body.message.startsWith('Name changed from')).to.equal(true)
+      //   expect(res.body.message.startsWith('Name changed from')).to.equal(true)
+      expect(res.body).to.have.property(
+        'message',
+        `Name changed from ${files[0].file_name} to newname`
+      )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
     })
 
     it('should not update id', async () => {
@@ -1171,6 +1176,7 @@ describe('File Tests', () => {
         'error',
         'No valid field specified to update'
       )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
     })
 
     it('should say you do not have file with id error', async () => {
@@ -1220,6 +1226,7 @@ describe('File Tests', () => {
         'error',
         'File not found. Please check file id in the URL.'
       )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
     })
 
     it('should say invalid id', async () => {
@@ -1239,6 +1246,7 @@ describe('File Tests', () => {
         'error',
         'Invalid file id'
       )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
     })
 
     it('should say unauthorized', async () => {
@@ -1251,6 +1259,686 @@ describe('File Tests', () => {
         'error',
         'Unauthorized'
       )
+    })
+  })
+
+  describe('PATCH /admin/files/:fileId', () => {
+    it('should mark file as unsafe', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.ADMIN_EMAIL,
+        password: process.env.ADMIN_PASSWORD
+      })
+      expect(res).to.have.status(200)
+      const adminToken = res.body.token
+
+      res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+      res = await chai.request(app)
+        .patch(`/admin/files/${files[0].file_id}`)
+        .send({ safe: false })
+        .set('Authorization', `Bearer ${adminToken}`)
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message', `${files[0].file_name} marked as unsafe by an Admin`
+      )
+      await redisClient.del(`auth_${decodeURIComponent(adminToken)}`)
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say already marked file as unsafe', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.ADMIN_EMAIL,
+        password: process.env.ADMIN_PASSWORD
+      })
+      expect(res).to.have.status(200)
+      const adminToken = res.body.token
+
+      res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+      res = await chai.request(app)
+        .patch(`/admin/files/${files[0].file_id}`)
+        .send({ safe: false })
+        .set('Authorization', `Bearer ${adminToken}`)
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message', `${files[0].file_name} marked as unsafe by an Admin`
+      )
+
+      res = await chai.request(app)
+        .patch(`/admin/files/${files[0].file_id}`)
+        .send({ safe: false })
+        .set('Authorization', `Bearer ${adminToken}`)
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message', `${files[0].file_name} already marked as unsafe by you`
+      )
+      await redisClient.del(`auth_${decodeURIComponent(adminToken)}`)
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say now marked safe', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.ADMIN_EMAIL,
+        password: process.env.ADMIN_PASSWORD
+      })
+      expect(res).to.have.status(200)
+      const adminToken = res.body.token
+
+      res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+      res = await chai.request(app)
+        .patch(`/admin/files/${files[0].file_id}`)
+        .send({ safe: false })
+        .set('Authorization', `Bearer ${adminToken}`)
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message', `${files[0].file_name} marked as unsafe by an Admin`
+      )
+
+      res = await chai.request(app)
+        .patch(`/admin/files/${files[0].file_id}`)
+        .send({ safe: true })
+        .set('Authorization', `Bearer ${adminToken}`)
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message',
+          `${files[0].file_name} marked as safe by an Admin that marked as unsafe previously`
+      )
+      await redisClient.del(`auth_${decodeURIComponent(adminToken)}`)
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should mark safe', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.ADMIN_EMAIL,
+        password: process.env.ADMIN_PASSWORD
+      })
+      expect(res).to.have.status(200)
+      const adminToken = res.body.token
+
+      res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      res = await chai.request(app)
+        .patch(`/admin/files/${files[0].file_id}`)
+        .send({ safe: true })
+        .set('Authorization', `Bearer ${adminToken}`)
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message',
+            `${files[0].file_name} marked as safe by an Admin`
+      )
+      await redisClient.del(`auth_${decodeURIComponent(adminToken)}`)
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should delete file after 3 different unsafe reviews', async () => {
+      await db<User>('users')
+        .update({ is_superuser: true })
+        .where({ id })
+
+      await db<User>('users')
+        .update({ is_superuser: true })
+        .where({ id: id2 })
+
+      const file = await db<File>('files')
+        .insert({
+          name: 'testreview',
+          displayName: 'Test',
+          folder_id: null,
+          link: 'https://risevest.com',
+          s3_key: 'testall',
+          user_id: id,
+          mimetype: 'audio/mpeg',
+          history: JSON.stringify([{ event: 'Created', date: new Date() }])
+        }, ['id', 'displayName'])
+
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.ADMIN_EMAIL,
+        password: process.env.ADMIN_PASSWORD
+      })
+      expect(res).to.have.status(200)
+      const token1 = res.body.token
+
+      res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token2 = res.body.token
+
+      res = await chai.request(app).post('/login').send({
+        email: process.env.WRONG_TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token3 = res.body.token
+
+      res = await chai.request(app)
+        .patch(`/admin/files/${file[0].id}`)
+        .send({ safe: false })
+        .set('Authorization', `Bearer ${token1}`)
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message', `${file[0].displayName} marked as unsafe by an Admin`
+      )
+
+      res = await chai.request(app)
+        .patch(`/admin/files/${file[0].id}`)
+        .send({ safe: false })
+        .set('Authorization', `Bearer ${token2}`)
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message', `${file[0].displayName} marked as unsafe by an Admin`
+      )
+
+      res = await chai.request(app)
+        .patch(`/admin/files/${file[0].id}`)
+        .send({ safe: false })
+        .set('Authorization', `Bearer ${token3}`)
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message', `${file[0].displayName} marked as unsafe by 3 admins and automatically deleted`
+      )
+
+      const deletedFile = await db<File>('files')
+        .where({ id: file[0].id })
+
+      expect(deletedFile[0]).to.not.exist
+
+      await db<User>('users')
+        .update({ is_superuser: false })
+        .where({ id })
+
+      await db<User>('users')
+        .update({ is_superuser: false })
+        .where({ id: id2 })
+      await redisClient.del(`auth_${decodeURIComponent(token1)}`)
+      await redisClient.del(`auth_${decodeURIComponent(token2)}`)
+      await redisClient.del(`auth_${decodeURIComponent(token3)}`)
+    })
+
+    it('should not delete file is not 3 unique false admin reviews', async () => {
+      const file = await db<File>('files')
+        .insert({
+          name: 'testreview',
+          displayName: 'Test',
+          folder_id: null,
+          link: 'https://risevest.com',
+          s3_key: 'testall',
+          user_id: id,
+          mimetype: 'audio/mpeg',
+          history: JSON.stringify([{ event: 'Created', date: new Date() }])
+        }, ['id', 'displayName'])
+
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.ADMIN_EMAIL,
+        password: process.env.ADMIN_PASSWORD
+      })
+      expect(res).to.have.status(200)
+      const token1 = res.body.token
+
+      res = await chai.request(app)
+        .patch(`/admin/files/${file[0].id}`)
+        .send({ safe: false })
+        .set('Authorization', `Bearer ${token1}`)
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message', `${file[0].displayName} marked as unsafe by an Admin`
+      )
+
+      res = await chai.request(app)
+        .patch(`/admin/files/${file[0].id}`)
+        .send({ safe: false })
+        .set('Authorization', `Bearer ${token1}`)
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message', `${file[0].displayName} already marked as unsafe by you`
+      )
+
+      res = await chai.request(app)
+        .patch(`/admin/files/${file[0].id}`)
+        .send({ safe: false })
+        .set('Authorization', `Bearer ${token1}`)
+
+      expect(res).to.have.status(201)
+      expect(res.body).to.have.property(
+        'message', `${file[0].displayName} already marked as unsafe by you`
+      )
+
+      const deletedFile = await db<File>('files')
+        .where({ id: file[0].id })
+
+      expect(deletedFile[0]).to.exist
+
+      await db<File>('files')
+        .where({ id: file[0].id })
+        .del()
+
+      await redisClient.del(`auth_${decodeURIComponent(token1)}`)
+    })
+
+    it('should say invalid id', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.ADMIN_EMAIL,
+        password: process.env.ADMIN_PASSWORD
+      })
+      expect(res).to.have.status(200)
+      const adminToken = res.body.token
+
+      res = await chai.request(app)
+        .patch('/admin/files/invalidid')
+        .send({ safe: false })
+        .set('Authorization', `Bearer ${adminToken}`)
+
+      expect(res).to.have.status(400)
+      expect(res.body).to.have.property(
+        'error', 'Invalid file id'
+      )
+      await redisClient.del(`auth_${decodeURIComponent(adminToken)}`)
+    })
+
+    it('should say file not found', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.ADMIN_EMAIL,
+        password: process.env.ADMIN_PASSWORD
+      })
+      expect(res).to.have.status(200)
+      const adminToken = res.body.token
+
+      res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      const ids: string[] = []
+
+      files.forEach((file) => {
+        ids.push(file.file_id)
+      })
+
+      const wronguuid = (): string | undefined => {
+        const uuid = v4()
+        if (ids.includes(uuid)) {
+          wronguuid()
+        } else {
+          return uuid
+        }
+      }
+      res = await chai.request(app)
+        .patch(`/admin/files/${wronguuid()}`)
+        .send({ safe: false })
+        .set('Authorization', `Bearer ${adminToken}`)
+
+      expect(res).to.have.status(404)
+      expect(res.body).to.have.property(
+        'error', 'File not found. Please check file id in the URL.'
+      )
+      await redisClient.del(`auth_${decodeURIComponent(adminToken)}`)
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say please specify if file is safe', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.ADMIN_EMAIL,
+        password: process.env.ADMIN_PASSWORD
+      })
+      expect(res).to.have.status(200)
+      const adminToken = res.body.token
+
+      res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      res = await chai.request(app)
+        .patch(`/admin/files/${files[0].file_id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+
+      expect(res).to.have.status(400)
+      expect(res.body).to.have.property(
+        'error', 'Please specify if file is safe'
+      )
+      await redisClient.del(`auth_${decodeURIComponent(adminToken)}`)
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say invalid safe', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.ADMIN_EMAIL,
+        password: process.env.ADMIN_PASSWORD
+      })
+      expect(res).to.have.status(200)
+      const adminToken = res.body.token
+
+      res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      res = await chai.request(app)
+        .patch(`/admin/files/${files[0].file_id}`)
+        .send({ safe: 'true' })
+        .set('Authorization', `Bearer ${adminToken}`)
+
+      expect(res).to.have.status(400)
+      expect(res.body).to.have.property(
+        'error', 'Invalid value for safe'
+      )
+      await redisClient.del(`auth_${decodeURIComponent(adminToken)}`)
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say invalid safe, alt', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.ADMIN_EMAIL,
+        password: process.env.ADMIN_PASSWORD
+      })
+      expect(res).to.have.status(200)
+      const adminToken = res.body.token
+
+      res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      res = await chai.request(app)
+        .patch(`/admin/files/${files[0].file_id}`)
+        .send({ safe: { safe: true } })
+        .set('Authorization', `Bearer ${adminToken}`)
+
+      expect(res).to.have.status(400)
+      expect(res.body).to.have.property(
+        'error', 'Invalid value for safe'
+      )
+      await redisClient.del(`auth_${decodeURIComponent(adminToken)}`)
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say invalid safe, alt 2', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.ADMIN_EMAIL,
+        password: process.env.ADMIN_PASSWORD
+      })
+      expect(res).to.have.status(200)
+      const adminToken = res.body.token
+
+      res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      res = await chai.request(app)
+        .patch(`/admin/files/${files[0].file_id}`)
+        .send({ safe: [true] })
+        .set('Authorization', `Bearer ${adminToken}`)
+
+      expect(res).to.have.status(400)
+      expect(res.body).to.have.property(
+        'error', 'Invalid value for safe'
+      )
+      await redisClient.del(`auth_${decodeURIComponent(adminToken)}`)
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say invalid safe, alt 3', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.ADMIN_EMAIL,
+        password: process.env.ADMIN_PASSWORD
+      })
+      expect(res).to.have.status(200)
+      const adminToken = res.body.token
+
+      res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      res = await chai.request(app)
+        .patch(`/admin/files/${files[0].file_id}`)
+        .send({ safe: 1 })
+        .set('Authorization', `Bearer ${adminToken}`)
+
+      expect(res).to.have.status(400)
+      expect(res.body).to.have.property(
+        'error', 'Invalid value for safe'
+      )
+      await redisClient.del(`auth_${decodeURIComponent(adminToken)}`)
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say page not found', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      res = await chai.request(app)
+        .patch(`/admin/files/${files[0].file_id}`)
+        .send({ safe: 1 })
+        .set('Authorization', `Bearer ${token}`)
+
+      expect(res).to.have.status(404)
+      expect(res.body).to.have.property(
+        'error', 'Page not found'
+      )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
+    })
+
+    it('should say page not found, alt', async () => {
+      let res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123'
+      })
+      expect(res).to.have.status(200)
+      const token = res.body.token
+
+      res = await chai.request(app)
+        .get('/files')
+        .set('Authorization', `Bearer ${token}`)
+      expect(res).to.have.status(200)
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
+      expect(res.body.files).to.exist
+      const files: Array<{
+        file_id: string
+        file_name: string
+        folder_name: string | null
+        file_history: Array<{ event: string, date: Date }>
+      }> = res.body.files
+
+      res = await chai.request(app)
+        .patch(`/admin/files/${files[0].file_id}`)
+        .send({ safe: 1 })
+
+      expect(res).to.have.status(404)
+      expect(res.body).to.have.property(
+        'error', 'Page not found'
+      )
+      await redisClient.del(`auth_${decodeURIComponent(token)}`)
     })
   })
 })

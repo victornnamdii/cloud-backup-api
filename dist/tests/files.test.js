@@ -867,7 +867,9 @@ const binaryParser = function (res, cb) {
                 .send({ name: 'newname' })
                 .set('Authorization', `Bearer ${token}`);
             (0, chai_1.expect)(res).to.have.status(201);
-            (0, chai_1.expect)(res.body.message.startsWith('Name changed from')).to.equal(true);
+            //   expect(res.body.message.startsWith('Name changed from')).to.equal(true)
+            (0, chai_1.expect)(res.body).to.have.property('message', `Name changed from ${files[0].file_name} to newname`);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
         (0, mocha_1.it)('should not update id', () => __awaiter(void 0, void 0, void 0, function* () {
             let res = yield chai_1.default.request(server_1.default).post('/login').send({
@@ -889,6 +891,7 @@ const binaryParser = function (res, cb) {
                 .set('Authorization', `Bearer ${token}`);
             (0, chai_1.expect)(res).to.have.status(400);
             (0, chai_1.expect)(res.body).to.have.property('error', 'No valid field specified to update');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
         (0, mocha_1.it)('should say you do not have file with id error', () => __awaiter(void 0, void 0, void 0, function* () {
             let res = yield chai_1.default.request(server_1.default).post('/login').send({
@@ -924,6 +927,7 @@ const binaryParser = function (res, cb) {
                 .set('Authorization', `Bearer ${token}`);
             (0, chai_1.expect)(res).to.have.status(404);
             (0, chai_1.expect)(res.body).to.have.property('error', 'File not found. Please check file id in the URL.');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
         (0, mocha_1.it)('should say invalid id', () => __awaiter(void 0, void 0, void 0, function* () {
             let res = yield chai_1.default.request(server_1.default).post('/login').send({
@@ -938,6 +942,7 @@ const binaryParser = function (res, cb) {
                 .set('Authorization', `Bearer ${token}`);
             (0, chai_1.expect)(res).to.have.status(400);
             (0, chai_1.expect)(res.body).to.have.property('error', 'Invalid file id');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
         (0, mocha_1.it)('should say unauthorized', () => __awaiter(void 0, void 0, void 0, function* () {
             const uuid = (0, uuid_1.v4)();
@@ -946,6 +951,491 @@ const binaryParser = function (res, cb) {
                 .send({ name: 'newname' });
             (0, chai_1.expect)(res).to.have.status(401);
             (0, chai_1.expect)(res.body).to.have.property('error', 'Unauthorized');
+        }));
+    });
+    (0, mocha_1.describe)('PATCH /admin/files/:fileId', () => {
+        (0, mocha_1.it)('should mark file as unsafe', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.ADMIN_EMAIL,
+                password: process.env.ADMIN_PASSWORD
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const adminToken = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/files')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            /* eslint-disable @typescript-eslint/no-unused-expressions */
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            res = yield chai_1.default.request(server_1.default)
+                .patch(`/admin/files/${files[0].file_id}`)
+                .send({ safe: false })
+                .set('Authorization', `Bearer ${adminToken}`);
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', `${files[0].file_name} marked as unsafe by an Admin`);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should say already marked file as unsafe', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.ADMIN_EMAIL,
+                password: process.env.ADMIN_PASSWORD
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const adminToken = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/files')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            /* eslint-disable @typescript-eslint/no-unused-expressions */
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            res = yield chai_1.default.request(server_1.default)
+                .patch(`/admin/files/${files[0].file_id}`)
+                .send({ safe: false })
+                .set('Authorization', `Bearer ${adminToken}`);
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', `${files[0].file_name} marked as unsafe by an Admin`);
+            res = yield chai_1.default.request(server_1.default)
+                .patch(`/admin/files/${files[0].file_id}`)
+                .send({ safe: false })
+                .set('Authorization', `Bearer ${adminToken}`);
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', `${files[0].file_name} already marked as unsafe by you`);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should say now marked safe', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.ADMIN_EMAIL,
+                password: process.env.ADMIN_PASSWORD
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const adminToken = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/files')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            /* eslint-disable @typescript-eslint/no-unused-expressions */
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            res = yield chai_1.default.request(server_1.default)
+                .patch(`/admin/files/${files[0].file_id}`)
+                .send({ safe: false })
+                .set('Authorization', `Bearer ${adminToken}`);
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', `${files[0].file_name} marked as unsafe by an Admin`);
+            res = yield chai_1.default.request(server_1.default)
+                .patch(`/admin/files/${files[0].file_id}`)
+                .send({ safe: true })
+                .set('Authorization', `Bearer ${adminToken}`);
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', `${files[0].file_name} marked as safe by an Admin that marked as unsafe previously`);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should mark safe', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.ADMIN_EMAIL,
+                password: process.env.ADMIN_PASSWORD
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const adminToken = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/files')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            /* eslint-disable @typescript-eslint/no-unused-expressions */
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            res = yield chai_1.default.request(server_1.default)
+                .patch(`/admin/files/${files[0].file_id}`)
+                .send({ safe: true })
+                .set('Authorization', `Bearer ${adminToken}`);
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', `${files[0].file_name} marked as safe by an Admin`);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should delete file after 3 different unsafe reviews', () => __awaiter(void 0, void 0, void 0, function* () {
+            yield (0, db_1.default)('users')
+                .update({ is_superuser: true })
+                .where({ id });
+            yield (0, db_1.default)('users')
+                .update({ is_superuser: true })
+                .where({ id: id2 });
+            const file = yield (0, db_1.default)('files')
+                .insert({
+                name: 'testreview',
+                displayName: 'Test',
+                folder_id: null,
+                link: 'https://risevest.com',
+                s3_key: 'testall',
+                user_id: id,
+                mimetype: 'audio/mpeg',
+                history: JSON.stringify([{ event: 'Created', date: new Date() }])
+            }, ['id', 'displayName']);
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.ADMIN_EMAIL,
+                password: process.env.ADMIN_PASSWORD
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token1 = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token2 = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.WRONG_TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token3 = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .patch(`/admin/files/${file[0].id}`)
+                .send({ safe: false })
+                .set('Authorization', `Bearer ${token1}`);
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', `${file[0].displayName} marked as unsafe by an Admin`);
+            res = yield chai_1.default.request(server_1.default)
+                .patch(`/admin/files/${file[0].id}`)
+                .send({ safe: false })
+                .set('Authorization', `Bearer ${token2}`);
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', `${file[0].displayName} marked as unsafe by an Admin`);
+            res = yield chai_1.default.request(server_1.default)
+                .patch(`/admin/files/${file[0].id}`)
+                .send({ safe: false })
+                .set('Authorization', `Bearer ${token3}`);
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', `${file[0].displayName} marked as unsafe by 3 admins and automatically deleted`);
+            const deletedFile = yield (0, db_1.default)('files')
+                .where({ id: file[0].id });
+            (0, chai_1.expect)(deletedFile[0]).to.not.exist;
+            yield (0, db_1.default)('users')
+                .update({ is_superuser: false })
+                .where({ id });
+            yield (0, db_1.default)('users')
+                .update({ is_superuser: false })
+                .where({ id: id2 });
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token1)}`);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token2)}`);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token3)}`);
+        }));
+        (0, mocha_1.it)('should not delete file is not 3 unique false admin reviews', () => __awaiter(void 0, void 0, void 0, function* () {
+            const file = yield (0, db_1.default)('files')
+                .insert({
+                name: 'testreview',
+                displayName: 'Test',
+                folder_id: null,
+                link: 'https://risevest.com',
+                s3_key: 'testall',
+                user_id: id,
+                mimetype: 'audio/mpeg',
+                history: JSON.stringify([{ event: 'Created', date: new Date() }])
+            }, ['id', 'displayName']);
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.ADMIN_EMAIL,
+                password: process.env.ADMIN_PASSWORD
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token1 = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .patch(`/admin/files/${file[0].id}`)
+                .send({ safe: false })
+                .set('Authorization', `Bearer ${token1}`);
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', `${file[0].displayName} marked as unsafe by an Admin`);
+            res = yield chai_1.default.request(server_1.default)
+                .patch(`/admin/files/${file[0].id}`)
+                .send({ safe: false })
+                .set('Authorization', `Bearer ${token1}`);
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', `${file[0].displayName} already marked as unsafe by you`);
+            res = yield chai_1.default.request(server_1.default)
+                .patch(`/admin/files/${file[0].id}`)
+                .send({ safe: false })
+                .set('Authorization', `Bearer ${token1}`);
+            (0, chai_1.expect)(res).to.have.status(201);
+            (0, chai_1.expect)(res.body).to.have.property('message', `${file[0].displayName} already marked as unsafe by you`);
+            const deletedFile = yield (0, db_1.default)('files')
+                .where({ id: file[0].id });
+            (0, chai_1.expect)(deletedFile[0]).to.exist;
+            yield (0, db_1.default)('files')
+                .where({ id: file[0].id })
+                .del();
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token1)}`);
+        }));
+        (0, mocha_1.it)('should say invalid id', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.ADMIN_EMAIL,
+                password: process.env.ADMIN_PASSWORD
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const adminToken = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .patch('/admin/files/invalidid')
+                .send({ safe: false })
+                .set('Authorization', `Bearer ${adminToken}`);
+            (0, chai_1.expect)(res).to.have.status(400);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Invalid file id');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
+        }));
+        (0, mocha_1.it)('should say file not found', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.ADMIN_EMAIL,
+                password: process.env.ADMIN_PASSWORD
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const adminToken = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/files')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            /* eslint-disable @typescript-eslint/no-unused-expressions */
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            const ids = [];
+            files.forEach((file) => {
+                ids.push(file.file_id);
+            });
+            const wronguuid = () => {
+                const uuid = (0, uuid_1.v4)();
+                if (ids.includes(uuid)) {
+                    wronguuid();
+                }
+                else {
+                    return uuid;
+                }
+            };
+            res = yield chai_1.default.request(server_1.default)
+                .patch(`/admin/files/${wronguuid()}`)
+                .send({ safe: false })
+                .set('Authorization', `Bearer ${adminToken}`);
+            (0, chai_1.expect)(res).to.have.status(404);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'File not found. Please check file id in the URL.');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should say please specify if file is safe', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.ADMIN_EMAIL,
+                password: process.env.ADMIN_PASSWORD
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const adminToken = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/files')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            /* eslint-disable @typescript-eslint/no-unused-expressions */
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            res = yield chai_1.default.request(server_1.default)
+                .patch(`/admin/files/${files[0].file_id}`)
+                .set('Authorization', `Bearer ${adminToken}`);
+            (0, chai_1.expect)(res).to.have.status(400);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Please specify if file is safe');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should say invalid safe', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.ADMIN_EMAIL,
+                password: process.env.ADMIN_PASSWORD
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const adminToken = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/files')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            /* eslint-disable @typescript-eslint/no-unused-expressions */
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            res = yield chai_1.default.request(server_1.default)
+                .patch(`/admin/files/${files[0].file_id}`)
+                .send({ safe: 'true' })
+                .set('Authorization', `Bearer ${adminToken}`);
+            (0, chai_1.expect)(res).to.have.status(400);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Invalid value for safe');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should say invalid safe, alt', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.ADMIN_EMAIL,
+                password: process.env.ADMIN_PASSWORD
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const adminToken = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/files')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            /* eslint-disable @typescript-eslint/no-unused-expressions */
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            res = yield chai_1.default.request(server_1.default)
+                .patch(`/admin/files/${files[0].file_id}`)
+                .send({ safe: { safe: true } })
+                .set('Authorization', `Bearer ${adminToken}`);
+            (0, chai_1.expect)(res).to.have.status(400);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Invalid value for safe');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should say invalid safe, alt 2', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.ADMIN_EMAIL,
+                password: process.env.ADMIN_PASSWORD
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const adminToken = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/files')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            /* eslint-disable @typescript-eslint/no-unused-expressions */
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            res = yield chai_1.default.request(server_1.default)
+                .patch(`/admin/files/${files[0].file_id}`)
+                .send({ safe: [true] })
+                .set('Authorization', `Bearer ${adminToken}`);
+            (0, chai_1.expect)(res).to.have.status(400);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Invalid value for safe');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should say invalid safe, alt 3', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.ADMIN_EMAIL,
+                password: process.env.ADMIN_PASSWORD
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const adminToken = res.body.token;
+            res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/files')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            /* eslint-disable @typescript-eslint/no-unused-expressions */
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            res = yield chai_1.default.request(server_1.default)
+                .patch(`/admin/files/${files[0].file_id}`)
+                .send({ safe: 1 })
+                .set('Authorization', `Bearer ${adminToken}`);
+            (0, chai_1.expect)(res).to.have.status(400);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Invalid value for safe');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should say unauthorized', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/files')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            /* eslint-disable @typescript-eslint/no-unused-expressions */
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            res = yield chai_1.default.request(server_1.default)
+                .patch(`/admin/files/${files[0].file_id}`)
+                .send({ safe: 1 })
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(404);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Page not found');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+        }));
+        (0, mocha_1.it)('should say unauthorized, alt', () => __awaiter(void 0, void 0, void 0, function* () {
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(200);
+            const token = res.body.token;
+            res = yield chai_1.default.request(server_1.default)
+                .get('/files')
+                .set('Authorization', `Bearer ${token}`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            /* eslint-disable @typescript-eslint/no-unused-expressions */
+            (0, chai_1.expect)(res.body.files).to.exist;
+            const files = res.body.files;
+            res = yield chai_1.default.request(server_1.default)
+                .patch(`/admin/files/${files[0].file_id}`)
+                .send({ safe: 1 });
+            (0, chai_1.expect)(res).to.have.status(404);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Page not found');
+            yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
     });
 });

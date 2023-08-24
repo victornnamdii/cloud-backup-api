@@ -530,7 +530,10 @@ class FileController {
       }
 
       if (falseAdminReviews.length >= 3) {
-        await deleteObject({ key: file.s3_key })
+        deleteObject({ key: file.s3_key })
+          .catch(() => {
+            console.log(`Didn't delete ${file.s3_key}`)
+          })
         await db<File>('files').where({
           id: fileId
         }).del()

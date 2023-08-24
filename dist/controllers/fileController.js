@@ -518,7 +518,10 @@ class FileController {
                     });
                 }
                 if (falseAdminReviews.length >= 3) {
-                    yield (0, uploadMiddleware_1.deleteObject)({ key: file.s3_key });
+                    (0, uploadMiddleware_1.deleteObject)({ key: file.s3_key })
+                        .catch(() => {
+                        console.log(`Didn't delete ${file.s3_key}`);
+                    });
                     yield (0, db_1.default)('files').where({
                         id: fileId
                     }).del();
