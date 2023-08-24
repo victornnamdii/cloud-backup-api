@@ -1,4 +1,4 @@
-import RequestBodyError from '../BodyError'
+import RequestBodyError from '../BodyError';
 
 interface Folder {
   id: string
@@ -8,11 +8,11 @@ interface Folder {
 
 const validateUpdateFolderBody = (body: Folder): void => {
   if (body.name !== undefined && typeof body.name !== 'string') {
-    throw new RequestBodyError('Please enter a valid name')
+    throw new RequestBodyError('Please enter a valid name');
   }
   if (body.name === 'null') {
-    throw new RequestBodyError('Name cannot be "null"')
+    throw new RequestBodyError('Name cannot be "null"');
   }
-}
+};
 
-export default validateUpdateFolderBody
+export default validateUpdateFolderBody;

@@ -49,6 +49,7 @@ const hashPassword_1 = __importDefault(require("../utils/hashPassword"));
 const uploadMiddleware_1 = require("../middlewares/uploadMiddleware");
 dotenv_1.default.config();
 chai_1.default.use(chai_http_1.default);
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 const binaryParser = function (res, cb) {
     res.setEncoding('binary');
     res.data = '';

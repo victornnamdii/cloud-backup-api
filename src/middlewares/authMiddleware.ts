@@ -1,8 +1,9 @@
-import { type Request, type Response, type NextFunction } from 'express'
-import db from '../config/db'
-import validateMoveFileBody from '../utils/validators/movefile'
-import RequestBodyError from '../utils/BodyError'
+import { type Request, type Response, type NextFunction } from 'express';
+import db from '../config/db';
+import validateMoveFileBody from '../utils/validators/movefile';
+import RequestBodyError from '../utils/BodyError';
 
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 type FinalResponse = (undefined | Response<any, Record<string, any>>)
 
 interface File {
@@ -25,81 +26,81 @@ interface Folder {
 const requireNoAuth = (req: Request, res: Response, next: NextFunction): FinalResponse => {
   try {
     if (req.user !== undefined) {
-      return res.status(401).json({ error: 'You are already authorized' })
+      return res.status(401).json({ error: 'You are already authorized' });
     }
-    next()
+    next();
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
 
 const requireAuth = (req: Request, res: Response, next: NextFunction): FinalResponse => {
   try {
     if (req.user === undefined) {
-      return res.status(401).json({ error: 'Unauthorized' })
+      return res.status(401).json({ error: 'Unauthorized' });
     }
-    next()
+    next();
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
 
 const requireAdminAuth = (req: Request, res: Response, next: NextFunction): FinalResponse => {
   try {
     if (req.user?.is_superuser === true) {
-      next()
-      return
+      next();
+      return;
     }
-    return res.status(404).json({ error: 'Page not found' })
+    return res.status(404).json({ error: 'Page not found' });
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
 
 const requireSuperAdminAuth = (req: Request, res: Response, next: NextFunction): FinalResponse => {
   try {
     if (req.user?.is_superadmin === true) {
-      next()
-      return
+      next();
+      return;
     }
-    return res.status(401).json({ error: 'Unauthorized' })
+    return res.status(401).json({ error: 'Unauthorized' });
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
 
 const requireFolderAuth = async (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> => {
   try {
     if (req.user === undefined) {
-      return res.status(401).json({ error: 'Unauthorized' })
+      return res.status(401).json({ error: 'Unauthorized' });
     }
-    validateMoveFileBody(req.body)
-    let folderName: string | null = req.params.folderName
-    const { fileName, source } = req.body
+    validateMoveFileBody(req.body);
+    let folderName: string | null = req.params.folderName;
+    const { fileName, source } = req.body;
     if (folderName === 'null') {
-      folderName = null
+      folderName = null;
     }
 
-    let destinationFolderId: string | null = null
+    let destinationFolderId: string | null = null;
     if (folderName !== null) {
       const destinationFolder = await db<Folder>('folders').where({
         name: folderName.toLowerCase(),
         user_id: req.user.id
-      }).first()
+      }).first();
       if (destinationFolder === undefined) {
-        return res.status(404).json({ error: `You do not have a folder named ${folderName}` })
+        return res.status(404).json({ error: `You do not have a folder named ${folderName}` });
       }
-      destinationFolderId = destinationFolder.id
+      destinationFolderId = destinationFolder.id;
     }
 
-    let sourceFolder: Folder | undefined
+    let sourceFolder: Folder | undefined;
     if (source !== null && source !== undefined) {
       sourceFolder = await db<Folder>('folders').where({
         name: source.toLowerCase(),
         user_id: req.user.id
-      }).first()
+      }).first();
       if (sourceFolder === undefined) {
-        return res.status(404).json({ error: `You do not have a folder named ${source}` })
+        return res.status(404).json({ error: `You do not have a folder named ${source}` });
       }
     }
 
@@ -107,52 +108,52 @@ const requireFolderAuth = async (req: Request, res: Response, next: NextFunction
       name: fileName.toLowerCase(),
       user_id: req.user.id,
       folder_id: sourceFolder?.id ?? null
-    }).first('folder_id', 'id', 'history')
+    }).first('folder_id', 'id', 'history');
     if (file === undefined) {
-      let message: string = `You do not have a file named ${fileName}`
+      let message: string = `You do not have a file named ${fileName}`;
       if (sourceFolder !== undefined) {
-        message += ` in ${source} folder`
+        message += ` in ${source} folder`;
       } else {
-        message += ' in root directory'
+        message += ' in root directory';
       }
-      return res.status(404).json({ error: message })
+      return res.status(404).json({ error: message });
     }
     if (file.folder_id === destinationFolderId) {
-      let message: string = `${fileName} already exists in`
+      let message: string = `${fileName} already exists in`;
       if (destinationFolderId === null) {
-        message += ' root directory'
+        message += ' root directory';
       } else {
-        message += ` ${folderName} folder`
+        message += ` ${folderName} folder`;
       }
-      return res.status(400).json({ error: message })
+      return res.status(400).json({ error: message });
     }
 
-    res.locals.fileId = file.id
-    res.locals.fileHistory = file.history
-    res.locals.source = sourceFolder?.name ?? 'root directory'
-    res.locals.folderId = destinationFolderId
-    next()
+    res.locals.fileId = file.id;
+    res.locals.fileHistory = file.history;
+    res.locals.source = sourceFolder?.name ?? 'root directory';
+    res.locals.folderId = destinationFolderId;
+    next();
   } catch (error) {
     if (error instanceof RequestBodyError) {
-      return res.status(400).json({ error: error.message })
+      return res.status(400).json({ error: error.message });
     }
-    next(error)
+    next(error);
   }
-}
+};
 
 const requireFolderQueryAuth = async (req: Request, res: Response, next: NextFunction): Promise<FinalResponse> => {
   try {
     if (req.user === undefined) {
-      return res.status(401).json({ error: 'Unauthorized' })
+      return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const folderName: (string | undefined) = req.query.folderName as (string | undefined)
+    const folderName: (string | undefined) = req.query.folderName as (string | undefined);
     if (folderName !== undefined) {
-      const Folders = db<Folder>('folders')
+      const Folders = db<Folder>('folders');
       const folder = await Folders.where({
         name: folderName.toLowerCase(),
         user_id: req.user.id
-      }).first('id')
+      }).first('id');
 
       if (folder === undefined) {
         const newFolder = await Folders.insert({
@@ -161,17 +162,17 @@ const requireFolderQueryAuth = async (req: Request, res: Response, next: NextFun
           user_id: req.user.id
         },
         ['id']
-        )
-        res.locals.folderId = newFolder[0].id
+        );
+        res.locals.folderId = newFolder[0].id;
       } else {
-        res.locals.folderId = folder.id
+        res.locals.folderId = folder.id;
       }
     }
-    next()
+    next();
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
 
 export {
   requireNoAuth,
@@ -180,4 +181,4 @@ export {
   requireSuperAdminAuth,
   requireFolderAuth,
   requireFolderQueryAuth
-}
+};

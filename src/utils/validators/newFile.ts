@@ -1,4 +1,4 @@
-import RequestBodyError from '../BodyError'
+import RequestBodyError from '../BodyError';
 
 interface File {
   id: string
@@ -11,8 +11,8 @@ interface File {
 
 const validateNewFileBody = (body: File): void => {
   if (typeof body.name !== 'undefined' && typeof body.name !== 'string') {
-    throw new RequestBodyError('Name should be a string or undefined')
+    throw new RequestBodyError('Name should be a string or undefined');
   }
-}
+};
 
-export default validateNewFileBody
+export default validateNewFileBody;

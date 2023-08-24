@@ -1,8 +1,8 @@
-import { randomBytes } from 'crypto'
+import { randomBytes } from 'crypto';
 
 const generatePassword = (): string => {
-  const buffer = randomBytes(8)
-  return buffer.toString('base64')
-}
+  const buffer = randomBytes(8);
+  return buffer.toString('base64');
+};
 
-export default generatePassword
+export default generatePassword;

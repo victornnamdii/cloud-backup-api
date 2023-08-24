@@ -1,4 +1,4 @@
-import RequestBodyError from '../BodyError'
+import RequestBodyError from '../BodyError';
 
 interface FileParams {
   fileName: string | undefined
@@ -7,14 +7,14 @@ interface FileParams {
 
 const validateMoveFileBody = (body: FileParams): void => {
   if (body.fileName === undefined || typeof body.fileName !== 'string') {
-    throw new RequestBodyError('Please enter a file name')
+    throw new RequestBodyError('Please enter a file name');
   }
   if (typeof body.source !== 'undefined' && typeof body.source !== 'string') {
-    throw new RequestBodyError('Source should be a string or undefined')
+    throw new RequestBodyError('Source should be a string or undefined');
   }
   if (body.source === undefined || body.source === 'null') {
-    body.source = null
+    body.source = null;
   }
-}
+};
 
-export default validateMoveFileBody
+export default validateMoveFileBody;

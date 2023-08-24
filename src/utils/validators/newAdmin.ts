@@ -1,5 +1,5 @@
-import isEmail from 'validator/lib/isEmail'
-import RequestBodyError from '../BodyError'
+import isEmail from 'validator/lib/isEmail';
+import RequestBodyError from '../BodyError';
 interface newAdminParams {
   email: string | undefined
   firstName: string | undefined
@@ -11,29 +11,29 @@ const validateNewAdminBody = (body: newAdminParams): void => {
     body.email === null ||
     typeof body.email !== 'string'
   ) {
-    throw new RequestBodyError('Please enter an email')
+    throw new RequestBodyError('Please enter an email');
   }
 
-  const email = body.email
-  body.email = email.toLowerCase().trim()
+  const email = body.email;
+  body.email = email.toLowerCase().trim();
 
   if (!isEmail(body.email)) {
-    throw new RequestBodyError('Please enter a valid email')
+    throw new RequestBodyError('Please enter a valid email');
   }
 
   if (body.firstName === undefined ||
     typeof body.firstName !== 'string' ||
     body.firstName === ''
   ) {
-    throw new RequestBodyError('Please enter a first name')
+    throw new RequestBodyError('Please enter a first name');
   }
 
   if (body.lastName === undefined ||
     typeof body.lastName !== 'string' ||
     body.lastName === ''
   ) {
-    throw new RequestBodyError('Please enter a last name')
+    throw new RequestBodyError('Please enter a last name');
   }
-}
+};
 
-export default validateNewAdminBody
+export default validateNewAdminBody;

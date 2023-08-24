@@ -1,8 +1,8 @@
-import { randomBytes } from 'crypto'
+import { randomBytes } from 'crypto';
 
 const generateKey = (): string => {
-  const buffer = randomBytes(32)
-  return buffer.toString('base64')
-}
+  const buffer = randomBytes(32);
+  return buffer.toString('base64');
+};
 
-export default generateKey
+export default generateKey;

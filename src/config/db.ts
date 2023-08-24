@@ -1,8 +1,8 @@
-import { type Knex, knex } from 'knex'
-import dotenv from 'dotenv'
+import { type Knex, knex } from 'knex';
+import dotenv from 'dotenv';
 
-dotenv.config()
-const port: number = Number(process.env.PG_PORT)
+dotenv.config();
+const port: number = Number(process.env.PG_PORT);
 
 const config: Knex.Config = {
   client: 'pg',
@@ -13,8 +13,8 @@ const config: Knex.Config = {
     database: process.env.PG_DATABASE,
     port
   }
-}
+};
 
-const db = knex(config)
+const db = knex(config);
 
-export default db
+export default db;
