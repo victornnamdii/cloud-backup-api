@@ -2,6 +2,8 @@
 
 This repo contains an API that serves as an cloud backup system for users to for back up files to AWS S3. Built with Node.js, Typescript, Redis, PostgreSQL, and S3.
 
+This api is hosted on https://cloudbackupapi-7336ea76e701.herokuapp.com
+
 ## Requirements
 
 * PostgreSQL
