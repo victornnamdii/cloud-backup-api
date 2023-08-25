@@ -1353,10 +1353,12 @@ describe('File and Folder Tests', () => {
       expect(res.body).to.have.property(
         'message', `${files[0].file_name} marked as unsafe by an Admin`
       );
-      await chai.request(app)
-        .patch(`/admin/files/${files[0].file_id}`)
-        .send({ safe: true })
-        .set('Authorization', `Bearer ${adminToken}`);
+      await db<File>('files')
+        .where({id: files[0].file_id })
+        .update({
+          safe: true,
+          false_review_by: '[]'
+        });
       await redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
       await redisClient.del(`auth_${decodeURIComponent(token)}`);
     });
@@ -1407,10 +1409,12 @@ describe('File and Folder Tests', () => {
       expect(res.body).to.have.property(
         'message', `${files[0].file_name} already marked as unsafe by you`
       );
-      await chai.request(app)
-        .patch(`/admin/files/${files[0].file_id}`)
-        .send({ safe: true })
-        .set('Authorization', `Bearer ${adminToken}`);
+      await db<File>('files')
+        .where({id: files[0].file_id })
+        .update({
+          safe: true,
+          false_review_by: '[]'
+        });
       await redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
       await redisClient.del(`auth_${decodeURIComponent(token)}`);
     });
@@ -1462,10 +1466,12 @@ describe('File and Folder Tests', () => {
         'message',
         `${files[0].file_name} marked as safe by an Admin that marked as unsafe previously`
       );
-      await chai.request(app)
-        .patch(`/admin/files/${files[0].file_id}`)
-        .send({ safe: true })
-        .set('Authorization', `Bearer ${adminToken}`);
+      await db<File>('files')
+        .where({id: files[0].file_id })
+        .update({
+          safe: true,
+          false_review_by: '[]'
+        });
       await redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
       await redisClient.del(`auth_${decodeURIComponent(token)}`);
     });
