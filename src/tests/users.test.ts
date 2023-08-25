@@ -1,5 +1,5 @@
 import chai, { expect } from 'chai';
-import { after, describe, it } from 'mocha';
+import { before, after, describe, it } from 'mocha';
 import dotenv from 'dotenv';
 import chaiHttp from 'chai-http';
 import db from '../config/db';
@@ -19,6 +19,11 @@ interface User {
 }
 
 describe('User Tests', () => {
+  before(async () => {
+    await db<User>('users')
+      .where({ email: process.env.TESTS_MAIL })
+      .del();
+  });
   after(async () => {
     await db<User>('users')
       .where({ email: process.env.TESTS_MAIL })

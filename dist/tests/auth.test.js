@@ -49,6 +49,9 @@ chai_1.default.use(chai_http_1.default);
 (0, mocha_1.describe)('Authentication Tests', () => {
     (0, mocha_1.before)(() => __awaiter(void 0, void 0, void 0, function* () {
         yield (0, db_1.default)('users')
+            .where({ email: process.env.TESTS_MAIL })
+            .del();
+        yield (0, db_1.default)('users')
             .insert({
             email: process.env.TESTS_MAIL,
             password: yield (0, hashPassword_1.default)('test123'),

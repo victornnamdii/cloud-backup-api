@@ -45,6 +45,11 @@ const redis_1 = require("../config/redis");
 dotenv_1.default.config();
 chai_1.default.use(chai_http_1.default);
 (0, mocha_1.describe)('User Tests', () => {
+    (0, mocha_1.before)(() => __awaiter(void 0, void 0, void 0, function* () {
+        yield (0, db_1.default)('users')
+            .where({ email: process.env.TESTS_MAIL })
+            .del();
+    }));
     (0, mocha_1.after)(() => __awaiter(void 0, void 0, void 0, function* () {
         yield (0, db_1.default)('users')
             .where({ email: process.env.TESTS_MAIL })

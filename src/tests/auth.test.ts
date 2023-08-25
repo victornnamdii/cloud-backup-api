@@ -25,6 +25,10 @@ interface User {
 describe('Authentication Tests', () => {
   before(async () => {
     await db<User>('users')
+      .where({ email: process.env.TESTS_MAIL })
+      .del();
+
+    await db<User>('users')
       .insert({
         email: process.env.TESTS_MAIL,
         password: await hashPassword('test123'),

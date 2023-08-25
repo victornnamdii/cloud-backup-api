@@ -64,6 +64,12 @@ const binaryParser = function (res, cb) {
     let id;
     let id2;
     (0, mocha_1.before)(() => __awaiter(void 0, void 0, void 0, function* () {
+        yield (0, db_1.default)('users')
+            .where({ email: process.env.TESTS_MAIL })
+            .del();
+        yield (0, db_1.default)('users')
+            .where({ email: process.env.WRONG_TESTS_MAIL })
+            .del();
         const user = yield (0, db_1.default)('users')
             .insert({
             email: process.env.TESTS_MAIL,
@@ -1023,6 +1029,10 @@ const binaryParser = function (res, cb) {
                 .set('Authorization', `Bearer ${adminToken}`);
             (0, chai_1.expect)(res).to.have.status(201);
             (0, chai_1.expect)(res.body).to.have.property('message', `${files[0].file_name} marked as unsafe by an Admin`);
+            yield chai_1.default.request(server_1.default)
+                .patch(`/admin/files/${files[0].file_id}`)
+                .send({ safe: true })
+                .set('Authorization', `Bearer ${adminToken}`);
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
@@ -1058,6 +1068,10 @@ const binaryParser = function (res, cb) {
                 .set('Authorization', `Bearer ${adminToken}`);
             (0, chai_1.expect)(res).to.have.status(201);
             (0, chai_1.expect)(res.body).to.have.property('message', `${files[0].file_name} already marked as unsafe by you`);
+            yield chai_1.default.request(server_1.default)
+                .patch(`/admin/files/${files[0].file_id}`)
+                .send({ safe: true })
+                .set('Authorization', `Bearer ${adminToken}`);
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
@@ -1093,6 +1107,10 @@ const binaryParser = function (res, cb) {
                 .set('Authorization', `Bearer ${adminToken}`);
             (0, chai_1.expect)(res).to.have.status(201);
             (0, chai_1.expect)(res.body).to.have.property('message', `${files[0].file_name} marked as safe by an Admin that marked as unsafe previously`);
+            yield chai_1.default.request(server_1.default)
+                .patch(`/admin/files/${files[0].file_id}`)
+                .send({ safe: true })
+                .set('Authorization', `Bearer ${adminToken}`);
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));

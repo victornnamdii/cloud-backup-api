@@ -26,6 +26,7 @@ interface File {
   mimetype: string
   history: string | Array<{ event: string, date: Date }>
   false_review_by: string | string[]
+  safe: boolean
 }
 
 interface Folder {
@@ -63,6 +64,14 @@ describe('File and Folder Tests', () => {
   let id: string;
   let id2: string;
   before(async () => {
+    await db<User>('users')
+      .where({ email: process.env.TESTS_MAIL })
+      .del();
+
+    await db<User>('users')
+      .where({ email: process.env.WRONG_TESTS_MAIL })
+      .del();
+
     const user = await db<User>('users')
       .insert({
         email: process.env.TESTS_MAIL,
@@ -1154,7 +1163,7 @@ describe('File and Folder Tests', () => {
     });
   });
 
-  describe('PATCH /files/file:id', () => {
+  describe('PATCH /files/:fileId', () => {
     it('should update file name', async () => {
       let res = await chai.request(app).post('/login').send({
         email: process.env.TESTS_MAIL,
@@ -1344,6 +1353,10 @@ describe('File and Folder Tests', () => {
       expect(res.body).to.have.property(
         'message', `${files[0].file_name} marked as unsafe by an Admin`
       );
+      await chai.request(app)
+        .patch(`/admin/files/${files[0].file_id}`)
+        .send({ safe: true })
+        .set('Authorization', `Bearer ${adminToken}`);
       await redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
       await redisClient.del(`auth_${decodeURIComponent(token)}`);
     });
@@ -1394,6 +1407,10 @@ describe('File and Folder Tests', () => {
       expect(res.body).to.have.property(
         'message', `${files[0].file_name} already marked as unsafe by you`
       );
+      await chai.request(app)
+        .patch(`/admin/files/${files[0].file_id}`)
+        .send({ safe: true })
+        .set('Authorization', `Bearer ${adminToken}`);
       await redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
       await redisClient.del(`auth_${decodeURIComponent(token)}`);
     });
@@ -1445,6 +1462,10 @@ describe('File and Folder Tests', () => {
         'message',
         `${files[0].file_name} marked as safe by an Admin that marked as unsafe previously`
       );
+      await chai.request(app)
+        .patch(`/admin/files/${files[0].file_id}`)
+        .send({ safe: true })
+        .set('Authorization', `Bearer ${adminToken}`);
       await redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
       await redisClient.del(`auth_${decodeURIComponent(token)}`);
     });

@@ -6,9 +6,10 @@ COPY package*.json ./
 
 RUN npm install
 
-# RUN npm ci --omit=dev
 
 COPY . .
+
+RUN npm run test
 
 EXPOSE 5000
 CMD [ "npm", "start" ]

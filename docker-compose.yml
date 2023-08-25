@@ -3,24 +3,5 @@ services:
     build: .
     ports:
       - "5000:5000"
-    depends_on:
-      db:
-        condition: service_healthy
     command: ["npm", "start"]
-  
-  db:
-    image: postgres
-    restart: always
-    user: postgres
-    environment:
-      - POSTGRES_PASSWORD=244466666
-      - POSTGRES_USER=postgres
-      - POSTGRES_DB=risevest
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready"]
-      interval: 1s
-      timeout: 5s
-      retries: 10
 
