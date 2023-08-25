@@ -87,7 +87,7 @@ const binaryParser = function (res, cb) {
         const folder2 = yield (0, db_1.default)('folders')
             .insert({
             name: 'testfolder2',
-            displayName: 'TestFolder2',
+            displayName: 'testfolder2',
             user_id: id
         }, ['id']);
         yield (0, db_1.default)('files')
@@ -119,7 +119,7 @@ const binaryParser = function (res, cb) {
             folder_id: folder2[0].id,
             link: 'https://risevest.com',
             s3_key: process.env.VALID_S3_KEY,
-            user_id: id,
+            user_id: user[0].id,
             mimetype: 'audio/mpeg',
             history: JSON.stringify([{ event: 'Created', date: new Date() }])
         });

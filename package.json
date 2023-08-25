@@ -11,7 +11,9 @@
     "predev": "npm run build",
     "dev": "concurrently \"tsc --watch\" \"nodemon -q .\"",
     "pretest": "npm run build",
-    "test": "mocha -timeout 60000 --exit dist/tests/**/*.test.js"
+    "test": "mocha -timeout 60000 --exit dist/tests/**/*.test.js",
+    "premigrate": "npm run build",
+    "migrate": "node dist/migrations/start.js"
   },
   "author": "Ilodiuba Victor Nnamdi",
   "license": "ISC",

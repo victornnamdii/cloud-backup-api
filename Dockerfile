@@ -9,6 +9,8 @@ RUN npm install
 
 COPY . .
 
+RUN npm run migrate
+
 RUN npm run test
 
 EXPOSE 5000

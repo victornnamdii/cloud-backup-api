@@ -18,7 +18,8 @@ This api is hosted on https://cloudbackupapi-7336ea76e701.herokuapp.com
 * Access the directory `cd cloud-backup-api`
 * Run `npm install`.
 * Duplicate `env.example` to a `.env` file and fill in correct fields.
-* Run `npm test` to confirm server is functioning properly.
+* Run `npm run migrate` to start migrations to the database.
+* Run `npm test` to confirm server would function properly.
 * Run `npm start` to start the server.
 * Access server from specified port.
 
