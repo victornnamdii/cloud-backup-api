@@ -126,7 +126,7 @@ describe('File and Folder Tests', () => {
         folder_id: folder2[0].id,
         link: 'https://risevest.com',
         s3_key: process.env.VALID_S3_KEY,
-        user_id: id,
+        user_id: user[0].id,
         mimetype: 'audio/mpeg',
         history: JSON.stringify([{ event: 'Created', date: new Date() }])
       });
