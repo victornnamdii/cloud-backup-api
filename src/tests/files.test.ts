@@ -91,7 +91,7 @@ describe('File and Folder Tests', () => {
     const folder2 = await db<Folder>('folders')
       .insert({
         name: 'testfolder2',
-        displayName: 'TestFolder2',
+        displayName: 'testfolder2',
         user_id: id
       }, ['id']);
 
