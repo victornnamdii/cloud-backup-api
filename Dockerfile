@@ -12,4 +12,4 @@ COPY . .
 RUN npm run test
 
 EXPOSE 5000
-CMD [ "npm", "start" ]
+CMD [ "cat", ".env", "|", "npm", "start" ]

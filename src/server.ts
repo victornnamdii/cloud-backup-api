@@ -1,5 +1,5 @@
 import express, { type Request, type Response, type Express, type NextFunction } from 'express';
-import dotenv from 'dotenv';
+// import dotenv from 'dotenv';
 import startMigrations from './migrations/createUsersAndFiles';
 import { redisClient } from './config/redis';
 import errorHandler from './middlewares/errorMiddleware';
@@ -8,7 +8,7 @@ import authRouter from './routes/authRoutes';
 import deserializeUser from './middlewares/sessionMiddleware';
 import fileRouter from './routes/fileRoutes';
 
-dotenv.config();
+// dotenv.config();
 
 const app: Express = express();
 const port = process.env.PORT ?? 6000;

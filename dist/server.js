@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const dotenv_1 = __importDefault(require("dotenv"));
+// import dotenv from 'dotenv';
 const createUsersAndFiles_1 = __importDefault(require("./migrations/createUsersAndFiles"));
 const redis_1 = require("./config/redis");
 const errorMiddleware_1 = __importDefault(require("./middlewares/errorMiddleware"));
@@ -13,7 +13,7 @@ const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const sessionMiddleware_1 = __importDefault(require("./middlewares/sessionMiddleware"));
 const fileRoutes_1 = __importDefault(require("./routes/fileRoutes"));
-dotenv_1.default.config();
+// dotenv.config();
 const app = (0, express_1.default)();
 const port = (_a = process.env.PORT) !== null && _a !== void 0 ? _a : 6000;
 // Check Redis
