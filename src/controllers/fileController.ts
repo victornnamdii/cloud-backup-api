@@ -12,10 +12,12 @@ import validateUpdateFileBody from '../utils/validators/updateFile';
 
 interface File {
   id: string
+  file_id: string
   name: string
   displayName: string
   folder_id: string | null
   link: string
+  download_link: string
   s3_key: string
   user_id: string
   updated_at: Date
@@ -194,6 +196,9 @@ class FileController {
           ).from('files')
           .leftJoin('folders', 'files.folder_id', 'folders.id');
       }
+      files.forEach((file) => {
+        file.download_link = `${process.env.HOST}/files/download/${file.file_id}`;
+      });
       return res.status(200).json({ files });
     } catch (error) {
       next(error);
