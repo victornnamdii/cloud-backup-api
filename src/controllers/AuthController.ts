@@ -5,7 +5,7 @@ import validateLogInBody from '../utils/validators/login';
 import RequestBodyError from '../utils/BodyError';
 import db from '../config/db';
 import { redisClient } from '../config/redis';
-import generateKey from '../utils/generateToken';
+import generateToken from '../utils/generateToken';
 
 interface User {
   id: string
@@ -33,7 +33,7 @@ class AuthController {
       if (user !== undefined) {
         auth = await bcrypt.compare(password, user.password);
         if (auth) {
-          const token = generateKey();
+          const token = await generateToken() as string;
           await db<User>('users').where({
             email
           }).update({

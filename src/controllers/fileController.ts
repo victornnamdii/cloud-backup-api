@@ -223,6 +223,9 @@ class FileController {
           'files.displayName as file_name',
           'files.history as file_history'
         );
+      files.forEach((file) => {
+        file.download_link = `${process.env.HOST}/files/download/${file.file_id}`;
+      });
       return res.status(200).json({ files });
     } catch (error) {
       next(error);

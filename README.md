@@ -4,6 +4,20 @@ This repo contains an API that serves as an cloud backup system for users to for
 
 This api is hosted on https://cloudbackupapi-7336ea76e701.herokuapp.com
 
+- - - -
+## Features
+
+* Users can create an account with their email address, password and full name.
+* Users can upload files up to 200mb
+* Users can download uploaded files
+* Users can create folders to hold files
+* An admin user type for managing the content uploaded
+* Admins can mark pictures and videos as unsafe
+* Files are automatically deleted when marked unsafe by 3 different admins
+* Users can stream videos and audio
+* File History
+* Revokable session management
+
 ## Requirements
 
 * PostgreSQL
@@ -26,3 +40,7 @@ This api is hosted on https://cloudbackupapi-7336ea76e701.herokuapp.com
 ## Tests
 
 Unit tests are located in `src/tests` directory. To test large files (> 200MB) upload, add a large file to the `testfiles` folder and name it `largefile`.
+
+## Documentation
+
+The API documentation can be found on postman [here](https://documenter.getpostman.com/view/27917912/2s9Y5YRhRy)

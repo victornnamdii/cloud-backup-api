@@ -17,5 +17,6 @@ const startMigrations = () => __awaiter(void 0, void 0, void 0, function* () {
     console.log('Starting Migrations');
     yield (0, createUsersAndFiles_1.default)();
     console.log('Migrations completed');
+    process.exit();
 });
 startMigrations();

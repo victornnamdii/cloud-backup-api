@@ -6,6 +6,7 @@
     <title>Ilodiuba Victor's RiseVest File Stream</title>
   </head>
   <body>
+    <h1>Happy streaming!!!</h1>
     <% if (file.mimetype.startsWith('video')) { %>
       <video id="videoPlayer" width="650" controls muted="muted" autoplay>
         <source src="/files/download/<%= file.id %>?token=<%= token %>" type=<%= file.mimetype %> />

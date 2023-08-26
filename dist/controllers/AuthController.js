@@ -32,7 +32,7 @@ class AuthController {
                 if (user !== undefined) {
                     auth = yield bcrypt_1.default.compare(password, user.password);
                     if (auth) {
-                        const token = (0, generateToken_1.default)();
+                        const token = yield (0, generateToken_1.default)();
                         yield (0, db_1.default)('users').where({
                             email
                         }).update({
