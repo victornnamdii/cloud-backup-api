@@ -33,6 +33,7 @@ This api is hosted on https://cloudbackupapi-7336ea76e701.herokuapp.com
 * Run `npm install`.
 * Duplicate `env.example` to a `.env` file and fill in correct fields.
 * Run `npm run migrate` to start migrations to the database.
+    * Migrating creates a super admin account with the details you insert in `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_FIRST_NAME` and `ADMIN_LAST_NAME` in the `.env` file. This account will be the only one to have permissions to create other admins and revoke user sessions. The other admins created by this account would have permissions to review user files and view all files in the database.
 * Run `npm test` to confirm server would function properly.
 * Run `npm start` to start the server.
 * Access server from specified port.

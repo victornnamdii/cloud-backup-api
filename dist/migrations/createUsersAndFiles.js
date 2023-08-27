@@ -14,8 +14,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const hashPassword_1 = __importDefault(require("../utils/hashPassword"));
 const db_1 = __importDefault(require("../config/db"));
+const newUser_1 = __importDefault(require("../utils/validators/newUser"));
+const BodyError_1 = __importDefault(require("../utils/BodyError"));
 const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        const body = {
+            email: process.env.ADMIN_EMAIL,
+            password: process.env.ADMIN_PASSWORD,
+            firstName: process.env.ADMIN_FIRST_NAME,
+            lastName: process.env.ADMIN_LAST_NAME
+        };
+        (0, newUser_1.default)(body);
         let exists = yield db_1.default.schema.hasTable('users');
         if (!exists) {
             yield db_1.default.schema.createTable('users', (table) => {
@@ -99,9 +108,14 @@ const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
         console.log('Connected to DB');
     }
     catch (error) {
-        console.log('Error connecting to DB');
-        console.log(error);
-        throw error;
+        if (error instanceof BodyError_1.default) {
+            throw new Error(`An error occured creating the super admin account: ${error.message} in the ADMIN environmental variables`);
+        }
+        else {
+            console.log('Error connecting to DB');
+            console.log(error);
+            throw error;
+        }
     }
 });
 exports.default = createTables;

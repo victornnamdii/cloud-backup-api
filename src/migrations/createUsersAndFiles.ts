@@ -1,8 +1,17 @@
 import hashPassword from '../utils/hashPassword';
 import db from '../config/db';
+import validateNewUserBody from '../utils/validators/newUser';
+import RequestError from '../utils/BodyError';
 
 const createTables = async (): Promise<void> => {
   try {
+    const body = {
+      email: process.env.ADMIN_EMAIL,
+      password: process.env.ADMIN_PASSWORD,
+      firstName: process.env.ADMIN_FIRST_NAME,
+      lastName: process.env.ADMIN_LAST_NAME
+    };
+    validateNewUserBody(body);
     let exists: boolean = await db.schema.hasTable('users');
     if (!exists) {
       await db.schema.createTable('users', (table) => {
@@ -87,9 +96,15 @@ const createTables = async (): Promise<void> => {
     }
     console.log('Connected to DB');
   } catch (error) {
-    console.log('Error connecting to DB');
-    console.log(error);
-    throw error;
+    if (error instanceof RequestError) {
+      throw new Error(
+        `An error occured creating the super admin account: ${error.message} in the ADMIN environmental variables`
+      );
+    } else {
+      console.log('Error connecting to DB');
+      console.log(error);
+      throw error;
+    }
   }
 };
 
