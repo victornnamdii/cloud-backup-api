@@ -177,7 +177,8 @@ class FileController {
                         .leftJoin('folders', 'files.folder_id', 'folders.id');
                 }
                 files.forEach((file) => {
-                    file.download_link = `${process.env.HOST}/files/download/${file.file_id}`;
+                    var _a;
+                    file.download_link = `${process.env.HOST}/files/download/${file.file_id}?token=${(_a = req.user) === null || _a === void 0 ? void 0 : _a.token}`;
                 });
                 return res.status(200).json({ files });
             }
@@ -203,7 +204,8 @@ class FileController {
                     .where('folder_id', '=', subquery.id)
                     .select('files.id as file_id', 'files.displayName as file_name', 'files.history as file_history');
                 files.forEach((file) => {
-                    file.download_link = `${process.env.HOST}/files/download/${file.file_id}`;
+                    var _a;
+                    file.download_link = `${process.env.HOST}/files/download/${file.file_id}?token=${(_a = req.user) === null || _a === void 0 ? void 0 : _a.token}`;
                 });
                 return res.status(200).json({ files });
             }

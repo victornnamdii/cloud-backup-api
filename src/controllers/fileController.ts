@@ -197,7 +197,7 @@ class FileController {
           .leftJoin('folders', 'files.folder_id', 'folders.id');
       }
       files.forEach((file) => {
-        file.download_link = `${process.env.HOST}/files/download/${file.file_id}`;
+        file.download_link = `${process.env.HOST}/files/download/${file.file_id}?token=${req.user?.token}`;
       });
       return res.status(200).json({ files });
     } catch (error) {
@@ -224,7 +224,7 @@ class FileController {
           'files.history as file_history'
         );
       files.forEach((file) => {
-        file.download_link = `${process.env.HOST}/files/download/${file.file_id}`;
+        file.download_link = `${process.env.HOST}/files/download/${file.file_id}?token=${req.user?.token}`;
       });
       return res.status(200).json({ files });
     } catch (error) {

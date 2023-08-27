@@ -182,6 +182,9 @@ const binaryParser = function (res, cb) {
                     file.folder_name === null).to.equal(true);
                 (0, chai_1.expect)(file.file_history).to.exist;
                 (0, chai_1.expect)(file.file_history).to.be.an('array');
+                (0, chai_1.expect)(file.download_link).to.exist;
+                (0, chai_1.expect)(file.download_link).to.be.a('string');
+                (0, chai_1.expect)(file.download_link.includes('token')).to.equal(true);
                 file.file_history.forEach((event) => {
                     (0, chai_1.expect)(event.event).to.exist;
                     (0, chai_1.expect)(event.date).to.exist;
@@ -209,6 +212,9 @@ const binaryParser = function (res, cb) {
                     file.folder_name === null).to.equal(true);
                 (0, chai_1.expect)(file.file_history).to.exist;
                 (0, chai_1.expect)(file.file_history).to.be.an('array');
+                (0, chai_1.expect)(file.download_link).to.exist;
+                (0, chai_1.expect)(file.download_link).to.be.a('string');
+                (0, chai_1.expect)(file.download_link.includes('token')).to.equal(true);
                 file.file_history.forEach((event) => {
                     (0, chai_1.expect)(event.event).to.exist;
                     (0, chai_1.expect)(event.date).to.exist;
@@ -238,6 +244,9 @@ const binaryParser = function (res, cb) {
                     file.folder_name === null).to.equal(true);
                 (0, chai_1.expect)(file.file_history).to.exist;
                 (0, chai_1.expect)(file.file_history).to.be.an('array');
+                (0, chai_1.expect)(file.download_link).to.exist;
+                (0, chai_1.expect)(file.download_link).to.be.a('string');
+                (0, chai_1.expect)(file.download_link.includes('token')).to.equal(true);
                 file.file_history.forEach((event) => {
                     (0, chai_1.expect)(event.event).to.exist;
                     (0, chai_1.expect)(event.date).to.exist;
@@ -266,6 +275,9 @@ const binaryParser = function (res, cb) {
                     file.folder_name === null).to.equal(true);
                 (0, chai_1.expect)(file.file_history).to.exist;
                 (0, chai_1.expect)(file.file_history).to.be.an('array');
+                (0, chai_1.expect)(file.download_link).to.exist;
+                (0, chai_1.expect)(file.download_link).to.be.a('string');
+                (0, chai_1.expect)(file.download_link.includes('token')).to.equal(true);
                 file.file_history.forEach((event) => {
                     (0, chai_1.expect)(event.event).to.exist;
                     (0, chai_1.expect)(event.date).to.exist;
@@ -1686,6 +1698,9 @@ const binaryParser = function (res, cb) {
                 (0, chai_1.expect)(file.file_name).to.be.a('string');
                 (0, chai_1.expect)(file.file_history).to.exist;
                 (0, chai_1.expect)(file.file_history).to.be.an('array');
+                (0, chai_1.expect)(file.download_link).to.exist;
+                (0, chai_1.expect)(file.download_link).to.be.a('string');
+                (0, chai_1.expect)(file.download_link.includes('token')).to.equal(true);
                 file.file_history.forEach((event) => {
                     (0, chai_1.expect)(event.event).to.exist;
                     (0, chai_1.expect)(event.date).to.exist;
@@ -1712,6 +1727,9 @@ const binaryParser = function (res, cb) {
                 (0, chai_1.expect)(file.file_name).to.be.a('string');
                 (0, chai_1.expect)(file.file_history).to.exist;
                 (0, chai_1.expect)(file.file_history).to.be.an('array');
+                (0, chai_1.expect)(file.download_link).to.exist;
+                (0, chai_1.expect)(file.download_link).to.be.a('string');
+                (0, chai_1.expect)(file.download_link.includes('token')).to.equal(true);
                 file.file_history.forEach((event) => {
                     (0, chai_1.expect)(event.event).to.exist;
                     (0, chai_1.expect)(event.date).to.exist;
@@ -1719,7 +1737,7 @@ const binaryParser = function (res, cb) {
             });
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
         }));
-        (0, mocha_1.it)('should get all files in folder, alt', () => __awaiter(void 0, void 0, void 0, function* () {
+        (0, mocha_1.it)('should say you do not have folder', () => __awaiter(void 0, void 0, void 0, function* () {
             let res = yield chai_1.default.request(server_1.default).post('/login').send({
                 email: process.env.TESTS_MAIL,
                 password: 'test123'

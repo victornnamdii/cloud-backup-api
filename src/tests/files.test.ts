@@ -193,6 +193,7 @@ describe('File and Folder Tests', () => {
         file_name: string
         folder_name: string | null
         file_history: Array<{ event: string, date: Date }>
+        download_link: string
       }> = res.body.files;
       files.forEach((file) => {
         expect(file.file_id).to.exist;
@@ -202,6 +203,9 @@ describe('File and Folder Tests', () => {
         ).to.equal(true);
         expect(file.file_history).to.exist;
         expect(file.file_history).to.be.an('array');
+        expect(file.download_link).to.exist;
+        expect(file.download_link).to.be.a('string');
+        expect(file.download_link.includes('token')).to.equal(true);
         file.file_history.forEach((event) => {
           expect(event.event).to.exist;
           expect(event.date).to.exist;
@@ -228,6 +232,7 @@ describe('File and Folder Tests', () => {
         file_name: string
         folder_name: string | null
         file_history: Array<{ event: string, date: Date }>
+        download_link: string
       }> = res.body.files;
       files.forEach((file) => {
         expect(file.file_id).to.exist;
@@ -237,6 +242,9 @@ describe('File and Folder Tests', () => {
         ).to.equal(true);
         expect(file.file_history).to.exist;
         expect(file.file_history).to.be.an('array');
+        expect(file.download_link).to.exist;
+        expect(file.download_link).to.be.a('string');
+        expect(file.download_link.includes('token')).to.equal(true);
         file.file_history.forEach((event) => {
           expect(event.event).to.exist;
           expect(event.date).to.exist;
@@ -265,6 +273,7 @@ describe('File and Folder Tests', () => {
         folder_name: string | null
         file_history: Array<{ event: string, date: Date }>
         file_user_id: string
+        download_link: string
       }> = res.body.files;
       files.forEach((file) => {
         expect(file.file_id).to.exist;
@@ -275,6 +284,9 @@ describe('File and Folder Tests', () => {
         ).to.equal(true);
         expect(file.file_history).to.exist;
         expect(file.file_history).to.be.an('array');
+        expect(file.download_link).to.exist;
+        expect(file.download_link).to.be.a('string');
+        expect(file.download_link.includes('token')).to.equal(true);
         file.file_history.forEach((event) => {
           expect(event.event).to.exist;
           expect(event.date).to.exist;
@@ -302,6 +314,7 @@ describe('File and Folder Tests', () => {
         folder_name: string | null
         file_history: Array<{ event: string, date: Date }>
         file_user_id: string
+        download_link: string
       }> = res.body.files;
       files.forEach((file) => {
         expect(file.file_id).to.exist;
@@ -312,6 +325,9 @@ describe('File and Folder Tests', () => {
         ).to.equal(true);
         expect(file.file_history).to.exist;
         expect(file.file_history).to.be.an('array');
+        expect(file.download_link).to.exist;
+        expect(file.download_link).to.be.a('string');
+        expect(file.download_link.includes('token')).to.equal(true);
         file.file_history.forEach((event) => {
           expect(event.event).to.exist;
           expect(event.date).to.exist;
@@ -2243,6 +2259,7 @@ describe('File and Folder Tests', () => {
         file_name: string
         file_id: string
         file_history: Array<{ event: string, date: Date }>
+        download_link: string
       }> = res.body.files;
 
       files.forEach((file) => {
@@ -2252,6 +2269,9 @@ describe('File and Folder Tests', () => {
         expect(file.file_name).to.be.a('string');
         expect(file.file_history).to.exist;
         expect(file.file_history).to.be.an('array');
+        expect(file.download_link).to.exist;
+        expect(file.download_link).to.be.a('string');
+        expect(file.download_link.includes('token')).to.equal(true);
         file.file_history.forEach((event) => {
           expect(event.event).to.exist;
           expect(event.date).to.exist;
@@ -2278,6 +2298,7 @@ describe('File and Folder Tests', () => {
         file_name: string
         file_id: string
         file_history: Array<{ event: string, date: Date }>
+        download_link: string
       }> = res.body.files;
 
       files.forEach((file) => {
@@ -2287,6 +2308,9 @@ describe('File and Folder Tests', () => {
         expect(file.file_name).to.be.a('string');
         expect(file.file_history).to.exist;
         expect(file.file_history).to.be.an('array');
+        expect(file.download_link).to.exist;
+        expect(file.download_link).to.be.a('string');
+        expect(file.download_link.includes('token')).to.equal(true);
         file.file_history.forEach((event) => {
           expect(event.event).to.exist;
           expect(event.date).to.exist;
@@ -2295,7 +2319,7 @@ describe('File and Folder Tests', () => {
       await redisClient.del(`auth_${decodeURIComponent(token)}`);
     });
 
-    it('should get all files in folder, alt', async () => {
+    it('should say you do not have folder', async () => {
       let res = await chai.request(app).post('/login').send({
         email: process.env.TESTS_MAIL,
         password: 'test123'

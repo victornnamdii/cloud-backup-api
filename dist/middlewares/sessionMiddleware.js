@@ -29,7 +29,7 @@ const deserializeUser = (req, res, next) => __awaiter(void 0, void 0, void 0, fu
             const user = yield redis_1.redisClient.get(`auth_${token}`);
             if (user !== null) {
                 const userObject = JSON.parse(user);
-                userObject.token = QueryAuthorization;
+                userObject.token = encodeURIComponent(token);
                 req.user = userObject;
             }
         }
