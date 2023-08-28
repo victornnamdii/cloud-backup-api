@@ -30,7 +30,7 @@ class AuthController {
       let auth: boolean = false;
       const Users = db<User>('users');
       const { email, password } = req.body;
-      const user = await Users.where({ email }).first();
+      const user = await Users.where({ email: email.toLowerCase() }).first();
       if (user !== undefined) {
         auth = await bcrypt.compare(password, user.password);
         if (auth && user.isVerified) {

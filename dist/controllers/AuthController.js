@@ -28,7 +28,7 @@ class AuthController {
                 let auth = false;
                 const Users = (0, db_1.default)('users');
                 const { email, password } = req.body;
-                const user = yield Users.where({ email }).first();
+                const user = yield Users.where({ email: email.toLowerCase() }).first();
                 if (user !== undefined) {
                     auth = yield bcrypt_1.default.compare(password, user.password);
                     if (auth && user.isVerified) {
