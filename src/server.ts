@@ -7,6 +7,7 @@ import userRouter from './routes/userRoutes';
 import authRouter from './routes/authRoutes';
 import deserializeUser from './middlewares/sessionMiddleware';
 import fileRouter from './routes/fileRoutes';
+import clearVerifications from './utils/jobs/clearExpiredVerifications';
 
 // dotenv.config();
 
@@ -60,5 +61,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   }
 });
 app.use(errorHandler);
+clearVerifications.start();
 
 export default app;

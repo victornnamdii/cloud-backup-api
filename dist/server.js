@@ -13,6 +13,7 @@ const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const sessionMiddleware_1 = __importDefault(require("./middlewares/sessionMiddleware"));
 const fileRoutes_1 = __importDefault(require("./routes/fileRoutes"));
+const clearExpiredVerifications_1 = __importDefault(require("./utils/jobs/clearExpiredVerifications"));
 // dotenv.config();
 const app = (0, express_1.default)();
 const port = (_a = process.env.PORT) !== null && _a !== void 0 ? _a : 6000;
@@ -58,4 +59,5 @@ app.use((req, res, next) => {
     }
 });
 app.use(errorMiddleware_1.default);
+clearExpiredVerifications_1.default.start();
 exports.default = app;
