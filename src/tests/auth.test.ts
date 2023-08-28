@@ -20,6 +20,7 @@ interface User {
   updated_at: Date
   token: string
   is_superuser: boolean
+  isVerified: boolean
 }
 
 describe('Authentication Tests', () => {
@@ -27,18 +28,27 @@ describe('Authentication Tests', () => {
     await db<User>('users')
       .where({ email: process.env.TESTS_MAIL })
       .del();
+    
+    await db<User>('users')
+      .where({ email: process.env.WRONG_TESTS_MAIL })
+      .del();
 
     await db<User>('users')
       .insert({
         email: process.env.TESTS_MAIL,
         password: await hashPassword('test123'),
         first_name: 'Victor',
-        last_name: 'Ilodiuba'
+        last_name: 'Ilodiuba',
+        isVerified: true
       });
   });
   after(async () => {
     await db<User>('users')
       .where({ email: process.env.TESTS_MAIL })
+      .del();
+    
+    await db<User>('users')
+      .where({ email: process.env.WRONG_TESTS_MAIL })
       .del();
   });
   describe('POST /login', () => {
@@ -87,6 +97,35 @@ describe('Authentication Tests', () => {
         'Incorrect email/password'
       );
       expect(res.body).to.not.have.property('token');
+    });
+
+    it('should not log unverified user in', async () => {
+      await db<User>('users')
+        .insert({
+          email: process.env.WRONG_TESTS_MAIL,
+          password: await hashPassword('test123'),
+          first_name: 'Victor',
+          last_name: 'Ilodiuba',
+          isVerified: false
+        });
+
+      const res = await chai.request(app).post('/login').send({
+        email: process.env.WRONG_TESTS_MAIL,
+        password: 'test123'
+      });
+  
+      expect(res).to.have.status(401);
+      expect(res.body).to.be.an('object');
+      expect(res.body).to.have.property(
+        'error',
+        'Please verify your email'
+      );
+      expect(res.body).to.not.have.property('token');
+
+      await db<User>('users')
+        .where({
+          email: process.env.WRONG_TESTS_MAIL,
+        }).del();
     });
 
     it('should log user in, alt', async () => {
@@ -483,7 +522,8 @@ describe('Authentication Tests', () => {
           password: await hashPassword('test123'),
           first_name: 'Victor',
           last_name: 'Ilodiuba',
-          is_superuser: true
+          is_superuser: true,
+          isVerified: true
         });
       let res = await chai.request(app).post('/login').send({
         email: process.env.TESTS_MAIL,

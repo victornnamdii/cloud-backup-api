@@ -75,7 +75,8 @@ const binaryParser = function (res, cb) {
             email: process.env.TESTS_MAIL,
             password: yield (0, hashPassword_1.default)('test123'),
             first_name: 'Victor',
-            last_name: 'Ilodiuba'
+            last_name: 'Ilodiuba',
+            isVerified: true
         }, ['id']);
         id = user[0].id;
         const folder = yield (0, db_1.default)('folders')
@@ -128,7 +129,8 @@ const binaryParser = function (res, cb) {
             email: process.env.WRONG_TESTS_MAIL,
             password: yield (0, hashPassword_1.default)('test123'),
             first_name: 'Victor',
-            last_name: 'Ilodiuba'
+            last_name: 'Ilodiuba',
+            isVerified: true
         }, ['id']);
         id2 = user2[0].id;
         yield (0, db_1.default)('files')

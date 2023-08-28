@@ -52,16 +52,23 @@ chai_1.default.use(chai_http_1.default);
             .where({ email: process.env.TESTS_MAIL })
             .del();
         yield (0, db_1.default)('users')
+            .where({ email: process.env.WRONG_TESTS_MAIL })
+            .del();
+        yield (0, db_1.default)('users')
             .insert({
             email: process.env.TESTS_MAIL,
             password: yield (0, hashPassword_1.default)('test123'),
             first_name: 'Victor',
-            last_name: 'Ilodiuba'
+            last_name: 'Ilodiuba',
+            isVerified: true
         });
     }));
     (0, mocha_1.after)(() => __awaiter(void 0, void 0, void 0, function* () {
         yield (0, db_1.default)('users')
             .where({ email: process.env.TESTS_MAIL })
+            .del();
+        yield (0, db_1.default)('users')
+            .where({ email: process.env.WRONG_TESTS_MAIL })
             .del();
     }));
     (0, mocha_1.describe)('POST /login', () => {
@@ -95,6 +102,28 @@ chai_1.default.use(chai_http_1.default);
             (0, chai_1.expect)(res.body).to.be.an('object');
             (0, chai_1.expect)(res.body).to.have.property('error', 'Incorrect email/password');
             (0, chai_1.expect)(res.body).to.not.have.property('token');
+        }));
+        (0, mocha_1.it)('should not log unverified user in', () => __awaiter(void 0, void 0, void 0, function* () {
+            yield (0, db_1.default)('users')
+                .insert({
+                email: process.env.WRONG_TESTS_MAIL,
+                password: yield (0, hashPassword_1.default)('test123'),
+                first_name: 'Victor',
+                last_name: 'Ilodiuba',
+                isVerified: false
+            });
+            const res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.WRONG_TESTS_MAIL,
+                password: 'test123'
+            });
+            (0, chai_1.expect)(res).to.have.status(401);
+            (0, chai_1.expect)(res.body).to.be.an('object');
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Please verify your email');
+            (0, chai_1.expect)(res.body).to.not.have.property('token');
+            yield (0, db_1.default)('users')
+                .where({
+                email: process.env.WRONG_TESTS_MAIL,
+            }).del();
         }));
         (0, mocha_1.it)('should log user in, alt', () => __awaiter(void 0, void 0, void 0, function* () {
             let res = yield chai_1.default.request(server_1.default).post('/login').send({
@@ -359,7 +388,8 @@ chai_1.default.use(chai_http_1.default);
                 password: yield (0, hashPassword_1.default)('test123'),
                 first_name: 'Victor',
                 last_name: 'Ilodiuba',
-                is_superuser: true
+                is_superuser: true,
+                isVerified: true
             });
             let res = yield chai_1.default.request(server_1.default).post('/login').send({
                 email: process.env.TESTS_MAIL,

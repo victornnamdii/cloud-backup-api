@@ -2,9 +2,11 @@ import chai, { expect } from 'chai';
 import { before, after, describe, it } from 'mocha';
 import dotenv from 'dotenv';
 import chaiHttp from 'chai-http';
+import { setTimeout } from 'node:timers/promises';
 import db from '../config/db';
 import app from '../server';
 import { redisClient } from '../config/redis';
+import hashPassword from '../utils/hashPassword';
 
 dotenv.config();
 chai.use(chaiHttp);
@@ -16,6 +18,13 @@ interface User {
   first_name: string
   last_name: string
   is_superuser: boolean
+  isVerified: boolean
+}
+
+interface emailverifications {
+  user_id: string
+  unique_string: string
+  expires_at: Date
 }
 
 describe('User Tests', () => {
@@ -23,10 +32,18 @@ describe('User Tests', () => {
     await db<User>('users')
       .where({ email: process.env.TESTS_MAIL })
       .del();
+    
+    await db<User>('users')
+      .where({ email: process.env.WRONG_TESTS_MAIL })
+      .del();
   });
   after(async () => {
     await db<User>('users')
       .where({ email: process.env.TESTS_MAIL })
+      .del();
+    
+    await db<User>('users')
+      .where({ email: process.env.WRONG_TESTS_MAIL })
       .del();
   });
   describe('POST /signup', () => {
@@ -36,17 +53,31 @@ describe('User Tests', () => {
         .del();
     });
     it('should create a new user', async () => {
-      const res = await chai.request(app).post('/signup').send({
+      let res = await chai.request(app).post('/signup').send({
         email: process.env.TESTS_MAIL,
         password: 'test123',
         firstName: 'Victor',
         lastName: 'Ilodiuba'
       });
 
+      await setTimeout(3000);
       expect(res).to.have.status(201);
       expect(res.body).to.be.an('object');
-      expect(res.body).to.have.property('message', 'Sign up successful');
+      expect(res.body).to.have.property(
+        'message',
+        'Sign up successful, Please check your mail inbox/junk for a verification mail.'
+      );
       expect(res.body).to.have.property('email', process.env.TESTS_MAIL);
+
+      res = await chai.request(app).post('/login').send({
+        email: process.env.TESTS_MAIL,
+        password: 'test123',
+      });
+      expect(res).to.have.status(401);
+      expect(res.body).to.have.property(
+        'error',
+        'Please verify your email'
+      );
     });
 
     it('should say email already taken', async () => {
@@ -413,16 +444,16 @@ describe('User Tests', () => {
         .where({ email: process.env.TESTS_MAIL })
         .del();
 
-      let res = await chai.request(app).post('/signup').send({
-        email: process.env.TESTS_MAIL,
-        password: 'test123',
-        firstName: 'Victor',
-        lastName: 'Ilodiuba'
-      });
+      await db<User>('users')
+        .insert({
+          email: process.env.TESTS_MAIL,
+          password: await hashPassword('test123'),
+          first_name: 'Victor',
+          last_name: 'Ilodiuba',
+          isVerified: true
+        });
 
-      expect(res).to.have.status(201);
-
-      res = await chai.request(app).post('/login').send({
+      let res = await chai.request(app).post('/login').send({
         email: process.env.TESTS_MAIL,
         password: 'test123'
       });
@@ -438,6 +469,9 @@ describe('User Tests', () => {
       expect(res.body).to.have.property('error', 'Unauthorized');
 
       await redisClient.del(`auth_${decodeURIComponent(token)}`);
+      await db<User>('users')
+        .where({ email: process.env.TESTS_MAIL })
+        .del();
     });
 
     it('should say unauthorized, alt 2', async () => {
@@ -701,6 +735,113 @@ describe('User Tests', () => {
       );
 
       await redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
+    });
+  });
+
+  describe('GET /users/verify-email/:userId/:uniqueString', () => {
+    it('should verify user\'s email', async () => {
+      const user = await db<User>('users')
+        .insert({
+          email: process.env.TESTS_MAIL,
+          password: await hashPassword('test123'),
+          first_name: 'Victor',
+          last_name: 'Ilodiuba',
+          isVerified: false
+        }, ['id']);
+      const sixHours = new Date();
+      sixHours.setHours(sixHours.getHours() + 6);
+      await db<emailverifications>('emailverifications')
+        .insert({
+          user_id: user[0].id,
+          unique_string: await hashPassword('wowthisisgreat'),
+          expires_at: sixHours
+        }, ['user_id']);
+      const res = await chai.request(app).get(`/users/verify-email/${user[0].id}/wowthisisgreat`);
+      expect(res).to.have.status(200);
+      expect(res.body).to.have.property(
+        'message',
+        'You have been successfully verified'
+      );
+      await db<emailverifications>('emailverifications')
+        .where({
+          user_id: user[0].id
+        })
+        .del();
+      await db<User>('users')
+        .where({
+          email: process.env.TESTS_MAIL,
+        })
+        .del();
+    });
+
+    it('should not verify user\'s email if expired', async () => {
+      const user = await db<User>('users')
+        .insert({
+          email: process.env.TESTS_MAIL,
+          password: await hashPassword('test123'),
+          first_name: 'Victor',
+          last_name: 'Ilodiuba',
+          isVerified: false
+        }, ['id']);
+      const sixHours = new Date();
+      sixHours.setHours(sixHours.getHours() - 6);
+      await db<emailverifications>('emailverifications')
+        .insert({
+          user_id: user[0].id,
+          unique_string: await hashPassword('wowthisisgreat'),
+          expires_at: sixHours
+        }, ['user_id']);
+      const res = await chai.request(app).get(`/users/verify-email/${user[0].id}/wowthisisgreat`);
+      expect(res).to.have.status(400);
+      expect(res.body).to.have.property(
+        'error',
+        'Verification link has expired, Please sign up again.'
+      );
+      await db<emailverifications>('emailverifications')
+        .where({
+          user_id: user[0].id
+        })
+        .del();
+      await db<User>('users')
+        .where({
+          email: process.env.TESTS_MAIL,
+        })
+        .del();
+    });
+
+    it('should not verify user\'s email if link is invalid', async () => {
+      const user = await db<User>('users')
+        .insert({
+          email: process.env.TESTS_MAIL,
+          password: await hashPassword('test123'),
+          first_name: 'Victor',
+          last_name: 'Ilodiuba',
+          isVerified: false
+        }, ['id']);
+      const sixHours = new Date();
+      sixHours.setHours(sixHours.getHours() + 6);
+      await db<emailverifications>('emailverifications')
+        .insert({
+          user_id: user[0].id,
+          unique_string: await hashPassword('wowthisisgreat'),
+          expires_at: sixHours
+        }, ['user_id']);
+      const res = await chai.request(app).get(`/users/verify-email/${user[0].id}/wowthisisnotgreat`);
+      expect(res).to.have.status(400);
+      expect(res.body).to.have.property(
+        'error',
+        'Verification link is invalid'
+      );
+      await db<emailverifications>('emailverifications')
+        .where({
+          user_id: user[0].id
+        })
+        .del();
+      await db<User>('users')
+        .where({
+          email: process.env.TESTS_MAIL,
+        })
+        .del();
     });
   });
 });

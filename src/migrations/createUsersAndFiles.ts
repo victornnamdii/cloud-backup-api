@@ -23,6 +23,7 @@ const createTables = async (): Promise<void> => {
         table.string('token').nullable().defaultTo(null);
         table.boolean('is_superuser').defaultTo(false);
         table.boolean('is_superadmin').defaultTo(false);
+        table.boolean('isVerified').defaultTo(false);
         table.timestamps(false, true);
       });
       console.log('Created Users Table');
@@ -35,6 +36,21 @@ const createTables = async (): Promise<void> => {
         is_superadmin: true
       });
       console.log('Created Admin Account');
+    }
+
+    exists = await db.schema.hasTable('emailverifications');
+    if (!exists) {
+      await db.schema.createTable('emailverifications', (table) => {
+        table.uuid('user_id')
+          .notNullable()
+          .references('id')
+          .inTable('users')
+          .onUpdate('CASCADE')
+          .onDelete('CASCADE');
+        table.string('unique_string').notNullable();
+        table.datetime('expires_at').notNullable();
+      });
+      console.log('Created email verifications Table');
     }
 
     exists = await db.schema.hasTable('folders');

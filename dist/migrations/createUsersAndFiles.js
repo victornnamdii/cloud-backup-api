@@ -36,6 +36,7 @@ const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
                 table.string('token').nullable().defaultTo(null);
                 table.boolean('is_superuser').defaultTo(false);
                 table.boolean('is_superadmin').defaultTo(false);
+                table.boolean('isVerified').defaultTo(false);
                 table.timestamps(false, true);
             });
             console.log('Created Users Table');
@@ -48,6 +49,20 @@ const createTables = () => __awaiter(void 0, void 0, void 0, function* () {
                 is_superadmin: true
             });
             console.log('Created Admin Account');
+        }
+        exists = yield db_1.default.schema.hasTable('emailverifications');
+        if (!exists) {
+            yield db_1.default.schema.createTable('emailverifications', (table) => {
+                table.uuid('user_id')
+                    .notNullable()
+                    .references('id')
+                    .inTable('users')
+                    .onUpdate('CASCADE')
+                    .onDelete('CASCADE');
+                table.string('unique_string').notNullable();
+                table.datetime('expires_at').notNullable();
+            });
+            console.log('Created email verifications Table');
         }
         exists = yield db_1.default.schema.hasTable('folders');
         if (!exists) {

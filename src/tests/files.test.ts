@@ -45,7 +45,8 @@ interface User {
   last_name: string
   updated_at: Date
   token: string
-  is_superuser: boolean
+  is_superuser: boolean,
+  isVerified: boolean
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
@@ -77,7 +78,8 @@ describe('File and Folder Tests', () => {
         email: process.env.TESTS_MAIL,
         password: await hashPassword('test123'),
         first_name: 'Victor',
-        last_name: 'Ilodiuba'
+        last_name: 'Ilodiuba',
+        isVerified: true
       }, ['id']);
     id = user[0].id;
 
@@ -136,7 +138,8 @@ describe('File and Folder Tests', () => {
         email: process.env.WRONG_TESTS_MAIL,
         password: await hashPassword('test123'),
         first_name: 'Victor',
-        last_name: 'Ilodiuba'
+        last_name: 'Ilodiuba',
+        isVerified: true
       }, ['id']);
 
     id2 = user2[0].id;

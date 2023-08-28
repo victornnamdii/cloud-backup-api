@@ -39,9 +39,11 @@ const chai_1 = __importStar(require("chai"));
 const mocha_1 = require("mocha");
 const dotenv_1 = __importDefault(require("dotenv"));
 const chai_http_1 = __importDefault(require("chai-http"));
+const promises_1 = require("node:timers/promises");
 const db_1 = __importDefault(require("../config/db"));
 const server_1 = __importDefault(require("../server"));
 const redis_1 = require("../config/redis");
+const hashPassword_1 = __importDefault(require("../utils/hashPassword"));
 dotenv_1.default.config();
 chai_1.default.use(chai_http_1.default);
 (0, mocha_1.describe)('User Tests', () => {
@@ -49,10 +51,16 @@ chai_1.default.use(chai_http_1.default);
         yield (0, db_1.default)('users')
             .where({ email: process.env.TESTS_MAIL })
             .del();
+        yield (0, db_1.default)('users')
+            .where({ email: process.env.WRONG_TESTS_MAIL })
+            .del();
     }));
     (0, mocha_1.after)(() => __awaiter(void 0, void 0, void 0, function* () {
         yield (0, db_1.default)('users')
             .where({ email: process.env.TESTS_MAIL })
+            .del();
+        yield (0, db_1.default)('users')
+            .where({ email: process.env.WRONG_TESTS_MAIL })
             .del();
     }));
     (0, mocha_1.describe)('POST /signup', () => {
@@ -62,16 +70,23 @@ chai_1.default.use(chai_http_1.default);
                 .del();
         }));
         (0, mocha_1.it)('should create a new user', () => __awaiter(void 0, void 0, void 0, function* () {
-            const res = yield chai_1.default.request(server_1.default).post('/signup').send({
+            let res = yield chai_1.default.request(server_1.default).post('/signup').send({
                 email: process.env.TESTS_MAIL,
                 password: 'test123',
                 firstName: 'Victor',
                 lastName: 'Ilodiuba'
             });
+            yield (0, promises_1.setTimeout)(3000);
             (0, chai_1.expect)(res).to.have.status(201);
             (0, chai_1.expect)(res.body).to.be.an('object');
-            (0, chai_1.expect)(res.body).to.have.property('message', 'Sign up successful');
+            (0, chai_1.expect)(res.body).to.have.property('message', 'Sign up successful, Please check your mail inbox/junk for a verification mail.');
             (0, chai_1.expect)(res.body).to.have.property('email', process.env.TESTS_MAIL);
+            res = yield chai_1.default.request(server_1.default).post('/login').send({
+                email: process.env.TESTS_MAIL,
+                password: 'test123',
+            });
+            (0, chai_1.expect)(res).to.have.status(401);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Please verify your email');
         }));
         (0, mocha_1.it)('should say email already taken', () => __awaiter(void 0, void 0, void 0, function* () {
             const res = yield chai_1.default.request(server_1.default).post('/signup').send({
@@ -384,14 +399,15 @@ chai_1.default.use(chai_http_1.default);
             yield (0, db_1.default)('users')
                 .where({ email: process.env.TESTS_MAIL })
                 .del();
-            let res = yield chai_1.default.request(server_1.default).post('/signup').send({
+            yield (0, db_1.default)('users')
+                .insert({
                 email: process.env.TESTS_MAIL,
-                password: 'test123',
-                firstName: 'Victor',
-                lastName: 'Ilodiuba'
+                password: yield (0, hashPassword_1.default)('test123'),
+                first_name: 'Victor',
+                last_name: 'Ilodiuba',
+                isVerified: true
             });
-            (0, chai_1.expect)(res).to.have.status(201);
-            res = yield chai_1.default.request(server_1.default).post('/login').send({
+            let res = yield chai_1.default.request(server_1.default).post('/login').send({
                 email: process.env.TESTS_MAIL,
                 password: 'test123'
             });
@@ -405,6 +421,9 @@ chai_1.default.use(chai_http_1.default);
             (0, chai_1.expect)(res).to.have.status(401);
             (0, chai_1.expect)(res.body).to.have.property('error', 'Unauthorized');
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(token)}`);
+            yield (0, db_1.default)('users')
+                .where({ email: process.env.TESTS_MAIL })
+                .del();
         }));
         (0, mocha_1.it)('should say unauthorized, alt 2', () => __awaiter(void 0, void 0, void 0, function* () {
             const res = yield chai_1.default.request(server_1.default).post('/admin/create').send({
@@ -600,6 +619,101 @@ chai_1.default.use(chai_http_1.default);
             (0, chai_1.expect)(res.body).to.be.an('object');
             (0, chai_1.expect)(res.body).to.have.property('error', 'Please enter a last name');
             yield redis_1.redisClient.del(`auth_${decodeURIComponent(adminToken)}`);
+        }));
+    });
+    (0, mocha_1.describe)('GET /users/verify-email/:userId/:uniqueString', () => {
+        (0, mocha_1.it)('should verify user\'s email', () => __awaiter(void 0, void 0, void 0, function* () {
+            const user = yield (0, db_1.default)('users')
+                .insert({
+                email: process.env.TESTS_MAIL,
+                password: yield (0, hashPassword_1.default)('test123'),
+                first_name: 'Victor',
+                last_name: 'Ilodiuba',
+                isVerified: false
+            }, ['id']);
+            const sixHours = new Date();
+            sixHours.setHours(sixHours.getHours() + 6);
+            yield (0, db_1.default)('emailverifications')
+                .insert({
+                user_id: user[0].id,
+                unique_string: yield (0, hashPassword_1.default)('wowthisisgreat'),
+                expires_at: sixHours
+            }, ['user_id']);
+            const res = yield chai_1.default.request(server_1.default).get(`/users/verify-email/${user[0].id}/wowthisisgreat`);
+            (0, chai_1.expect)(res).to.have.status(200);
+            (0, chai_1.expect)(res.body).to.have.property('message', 'You have been successfully verified');
+            yield (0, db_1.default)('emailverifications')
+                .where({
+                user_id: user[0].id
+            })
+                .del();
+            yield (0, db_1.default)('users')
+                .where({
+                email: process.env.TESTS_MAIL,
+            })
+                .del();
+        }));
+        (0, mocha_1.it)('should not verify user\'s email if expired', () => __awaiter(void 0, void 0, void 0, function* () {
+            const user = yield (0, db_1.default)('users')
+                .insert({
+                email: process.env.TESTS_MAIL,
+                password: yield (0, hashPassword_1.default)('test123'),
+                first_name: 'Victor',
+                last_name: 'Ilodiuba',
+                isVerified: false
+            }, ['id']);
+            const sixHours = new Date();
+            sixHours.setHours(sixHours.getHours() - 6);
+            yield (0, db_1.default)('emailverifications')
+                .insert({
+                user_id: user[0].id,
+                unique_string: yield (0, hashPassword_1.default)('wowthisisgreat'),
+                expires_at: sixHours
+            }, ['user_id']);
+            const res = yield chai_1.default.request(server_1.default).get(`/users/verify-email/${user[0].id}/wowthisisgreat`);
+            (0, chai_1.expect)(res).to.have.status(400);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Verification link has expired, Please sign up again.');
+            yield (0, db_1.default)('emailverifications')
+                .where({
+                user_id: user[0].id
+            })
+                .del();
+            yield (0, db_1.default)('users')
+                .where({
+                email: process.env.TESTS_MAIL,
+            })
+                .del();
+        }));
+        (0, mocha_1.it)('should not verify user\'s email if link is invalid', () => __awaiter(void 0, void 0, void 0, function* () {
+            const user = yield (0, db_1.default)('users')
+                .insert({
+                email: process.env.TESTS_MAIL,
+                password: yield (0, hashPassword_1.default)('test123'),
+                first_name: 'Victor',
+                last_name: 'Ilodiuba',
+                isVerified: false
+            }, ['id']);
+            const sixHours = new Date();
+            sixHours.setHours(sixHours.getHours() + 6);
+            yield (0, db_1.default)('emailverifications')
+                .insert({
+                user_id: user[0].id,
+                unique_string: yield (0, hashPassword_1.default)('wowthisisgreat'),
+                expires_at: sixHours
+            }, ['user_id']);
+            const res = yield chai_1.default.request(server_1.default).get(`/users/verify-email/${user[0].id}/wowthisisnotgreat`);
+            (0, chai_1.expect)(res).to.have.status(400);
+            (0, chai_1.expect)(res.body).to.have.property('error', 'Verification link is invalid');
+            yield (0, db_1.default)('emailverifications')
+                .where({
+                user_id: user[0].id
+            })
+                .del();
+            yield (0, db_1.default)('users')
+                .where({
+                email: process.env.TESTS_MAIL,
+            })
+                .del();
         }));
     });
 });

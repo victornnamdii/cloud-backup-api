@@ -31,7 +31,7 @@ class AuthController {
                 const user = yield Users.where({ email }).first();
                 if (user !== undefined) {
                     auth = yield bcrypt_1.default.compare(password, user.password);
-                    if (auth) {
+                    if (auth && user.isVerified) {
                         const token = yield (0, generateToken_1.default)();
                         yield (0, db_1.default)('users').where({
                             email
@@ -49,6 +49,9 @@ class AuthController {
                             id: user.id,
                             token: encodeURIComponent(token)
                         });
+                    }
+                    else if (auth && !user.isVerified) {
+                        return res.status(401).json({ error: 'Please verify your email' });
                     }
                 }
                 return res.status(401).json({ error: 'Incorrect email/password' });

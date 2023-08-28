@@ -15,6 +15,7 @@ interface User {
   last_name: string
   updated_at: Date
   token: string
+  isVerified: boolean
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
@@ -32,7 +33,7 @@ class AuthController {
       const user = await Users.where({ email }).first();
       if (user !== undefined) {
         auth = await bcrypt.compare(password, user.password);
-        if (auth) {
+        if (auth && user.isVerified) {
           const token = await generateToken() as string;
           await db<User>('users').where({
             email
@@ -53,6 +54,8 @@ class AuthController {
             id: user.id,
             token: encodeURIComponent(token)
           });
+        } else if (auth && !user.isVerified) {
+          return res.status(401).json({ error: 'Please verify your email' });
         }
       }
       return res.status(401).json({ error: 'Incorrect email/password' });
